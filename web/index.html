@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS SENTINEL | Multi-Agent Emergency Terminal</title>
+    <meta name="description" content="State-of-the-art Agentic Emergency Geocoded Intelligence Sentinel (AEGIS) linking Speechmatics dispatch audio, Bright Data search, and Gemini reasoning to dynamic Leaflet map coordinates.">
+    
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&family=Fira+Code:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS dynamic loader for modern utility class scaling -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#4a607c",
+                        "on-background": "#1b1c1a",
+                        "on-error": "#ffffff",
+                        "primary": "#000000",
+                        "security-blue": "#001A33",
+                        "on-secondary": "#ffffff",
+                        "on-surface": "#1b1c1a",
+                        "secondary": "#0050cc",
+                        "primary-fixed": "#d2e4ff",
+                        "background": "#fbf9f5",
+                        "tertiary-fixed-dim": "#2fdec3",
+                        "on-secondary-fixed-variant": "#003fa4",
+                        "surface-container": "#f0eeea",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#00201b",
+                        "on-primary": "#ffffff",
+                        "status-critical": "#D92D20",
+                        "surface-dim": "#dbdad6",
+                        "on-primary-fixed-variant": "#324863",
+                        "error-container": "#ffdad6",
+                        "surface": "#fbf9f5",
+                        "on-primary-fixed": "#021c36",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#001849",
+                        "secondary-container": "#0266ff",
+                        "secondary-fixed-dim": "#b3c5ff",
+                        "primary-fixed-dim": "#b1c8e9",
+                        "surface-container-high": "#eae8e4",
+                        "on-tertiary-container": "#009581",
+                        "status-warning": "#F79009",
+                        "secondary-fixed": "#dae1ff",
+                        "on-tertiary-fixed-variant": "#005045",
+                        "inverse-surface": "#30312e",
+                        "tertiary": "#000000",
+                        "outline": "#74777e",
+                        "surface-bright": "#fbf9f5",
+                        "tertiary-container": "#00201b",
+                        "intelligence-teal": "#00CFB5",
+                        "on-surface-variant": "#43474d",
+                        "tertiary-fixed": "#5afbdf",
+                        "outline-variant": "#c4c6ce",
+                        "primary-container": "#021c36",
+                        "surface-container-low": "#f5f3ef",
+                        "surface-variant": "#e4e2de",
+                        "inverse-on-surface": "#f2f0ec",
+                        "status-success": "#0C330D",
+                        "crisis-dispatch": "#FF5C35",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#e4e2de",
+                        "on-secondary-container": "#f9f7ff",
+                        "on-primary-container": "#6f85a3",
+                        "inverse-primary": "#b1c8e9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "64px",
+                        "base": "8px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Poppins"],
+                        "headline-lg-mobile": ["Poppins"],
+                        "label-md": ["Poppins"],
+                        "headline-md": ["Poppins"],
+                        "body-lg": ["Poppins"],
+                        "display-lg": ["Poppins"],
+                        "headline-lg": ["Poppins"],
+                        "label-sm": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+    
+    <!-- CSS Link -->
+    <link rel="stylesheet" href="index.css">
+    
+    <!-- Leaflet.js Map Assets (Free & High-Performance Mapping) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .pulse-dispatch {
+            animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .tactical-grid {
+            background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+    </style>
+</head>
+<body>
+    <div class="glass-bg-blur"></div>
+    <div class="glow-sphere orange"></div>
+    <div class="glow-sphere blue"></div>
+
+    <!-- LANDING PAGE CONTAINER (Visible before Operator Login) -->
+    <div id="landing-page-container" class="bg-background dark:bg-security-blue text-on-background dark:text-white font-body-md min-h-screen selection:bg-secondary/30 relative z-[200] variant-ai-first">
+        <!-- Top Navigation Bar -->
+        <nav id="landing-nav" class="fixed top-0 w-full z-50 bg-white/80 dark:bg-security-blue/80 backdrop-blur-md border-b border-outline-variant/30 dark:border-white/10 transition-all duration-300">
+            <div class="flex justify-between items-center w-full px-margin-desktop max-w-container-max mx-auto h-20">
+                <div class="flex items-center gap-2 text-headline-md font-headline-md font-extrabold text-security-blue dark:text-intelligence-teal tracking-tighter" id="landing-nav-logo">
+                    <span class="logo-icon-emoji text-3xl">🛡️</span> <span class="logo-text-title">AEGIS SENTINEL</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8" id="landing-nav-links">
+                    <a class="text-secondary dark:text-intelligence-teal border-b-2 border-secondary dark:border-intelligence-teal pb-1 font-label-md text-label-md transition-all duration-150" href="#">Command</a>
+                    <a class="text-on-surface-variant dark:text-surface-variant/80 font-label-md text-label-md hover:text-secondary dark:hover:text-intelligence-teal transition-colors duration-200" href="#">Strategic Ops</a>
+                    <a class="text-on-surface-variant dark:text-surface-variant/80 font-label-md text-label-md hover:text-secondary dark:hover:text-intelligence-teal transition-colors duration-200" href="#">Intelligence</a>
+                    <a class="text-on-surface-variant dark:text-surface-variant/80 font-label-md text-label-md hover:text-secondary dark:hover:text-intelligence-teal transition-colors duration-200" href="#">Network</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Style Variant Switcher Dropdown -->
+                    <div class="relative inline-block text-left" id="variant-dropdown-container">
+                        <button id="variant-select-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-outline-variant/30 text-xs font-semibold hover:bg-surface-container dark:hover:bg-white/5 transition-all text-on-surface-variant dark:text-white bg-white/5">
+                            <span class="material-symbols-outlined text-[16px] text-secondary dark:text-intelligence-teal">grid_view</span>
+                            <span id="current-variant-lbl">AI-First (Dark)</span>
+                            <span class="material-symbols-outlined text-[12px]">keyboard_arrow_down</span>
+                        </button>
+                        <div id="variant-dropdown-options" class="absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-slate-900 border border-outline-variant/30 dark:border-white/10 shadow-2xl hidden z-50">
+                            <div class="p-1.5 flex flex-col gap-1">
+                                <button class="variant-opt-btn text-left px-3 py-2 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 text-on-surface-variant dark:text-white" data-variant="ai-first">🌌 AI-First (Dark)</button>
+                                <button class="variant-opt-btn text-left px-3 py-2 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 text-on-surface-variant dark:text-white" data-variant="command-center">🏙️ Command Center (Light)</button>
+                                <button class="variant-opt-btn text-left px-3 py-2 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 text-on-surface-variant dark:text-white" data-variant="sentinel-hud">📟 Sentinel HUD (Tech)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Theme Toggle Button for both dark and white theme toggling -->
+                    <button id="theme-toggle-btn" class="p-2 rounded-xl text-on-surface-variant dark:text-surface-variant/80 hover:bg-surface-container dark:hover:bg-white/10 transition-all flex items-center justify-center" aria-label="Toggle Theme">
+                        <span class="material-symbols-outlined text-2xl theme-icon-symbol">light_mode</span>
+                    </button>
+                    
+                    <button class="text-secondary dark:text-intelligence-teal font-label-md text-label-md px-4 py-2 rounded-xl hover:bg-surface-container dark:hover:bg-white/10 transition-all operator-login-trigger" id="landing-login-btn">Operator Login</button>
+                    <button class="bg-secondary dark:bg-intelligence-teal text-white dark:text-security-blue font-label-md text-label-md px-6 py-3 rounded-[16px] hover:bg-security-blue dark:hover:bg-white hover:text-white dark:hover:text-security-blue font-bold transition-all active:scale-95 operator-login-trigger" id="landing-init-btn">Initialize Terminal</button>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- STANDARD LANDING MAIN (visible in AI-First and Command Center variants) -->
+        <div id="landing-main-standard" class="transition-all duration-300">
+                   <section class="relative min-h-screen w-full overflow-hidden bg-white dark:bg-security-blue tactical-grid pt-20 flex items-center">
+                    <!-- Hero Background Video Loop -->
+                    <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
+                        <video autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover opacity-85 dark:opacity-90">
+                            <source src="background.mp4" type="video/mp4">
+                        </video>
+                        <div class="absolute inset-0 bg-gradient-to-b from-white/40 dark:from-[#001A33]/65 via-white/10 dark:via-[#001A33]/25 to-white/50 dark:to-[#001A33]/70"></div>
+                    </div>
+                    
+                    <div class="relative z-10 w-full flex flex-col items-center justify-center px-margin-desktop max-w-container-max mx-auto py-12 lg:py-24 text-center">
+                        <!-- Text Content Column -->
+                        <div class="w-full max-w-5xl text-on-background dark:text-white flex flex-col items-center text-center">
+                            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 dark:bg-intelligence-teal/10 border border-secondary/30 dark:border-intelligence-teal/30 mb-8 pulse-dispatch justify-center">
+                                <span class="w-2 h-2 rounded-full bg-secondary dark:bg-intelligence-teal"></span>
+                                <span class="text-label-sm font-label-sm text-secondary dark:text-intelligence-teal uppercase tracking-widest">Multi-Agent Coordination Terminal</span>
+                            </div>
+                            <h1 class="font-display-lg text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-8 leading-[1.15] tracking-tight font-extrabold text-security-blue dark:text-white max-w-5xl">
+                                Real-time <span class="text-secondary dark:text-intelligence-teal">Strategic Operations.</span>
+                            </h1>
+                            <p class="font-body-lg text-base sm:text-lg md:text-xl text-on-surface-variant dark:text-surface-variant/80 mb-12 leading-relaxed max-w-3xl mx-auto">
+                                Empowering critical crisis response with high-fidelity tactical intelligence. Aegis Sentinel synchronizes autonomous agent networks and emergency human dispatchers with sub-second coordination precision.
+                            </p>
+                            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-md sm:max-w-2xl mb-12">
+                                <button class="bg-secondary dark:bg-intelligence-teal text-white dark:text-security-blue font-label-md text-label-md px-8 py-4 rounded-[16px] flex items-center gap-2 transition-all group font-bold operator-login-trigger w-full sm:w-auto justify-center active:scale-95">
+                                    Access Terminal
+                                    <span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">terminal</span>
+                                </button>
+                                <button class="glass-panel border-secondary/20 dark:border-white/10 text-secondary dark:text-white font-label-md text-label-md px-8 py-4 rounded-[16px] flex items-center gap-2 hover:bg-secondary/10 dark:hover:bg-white/10 transition-all operator-login-trigger w-full sm:w-auto justify-center active:scale-95">
+                                    <span class="material-symbols-outlined text-xl">account_tree</span>
+                                    System Architecture
+                                </button>
+                            </div>
+                            <!-- Tactical Reliability Stats -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl mx-auto">
+                                <div class="glass-panel p-6 rounded-2xl border-l-4 border-secondary dark:border-intelligence-teal bg-surface-container-lowest/60 dark:bg-[#0b0f19] border border-outline-variant/30 text-left flex flex-col justify-center">
+                                    <div class="text-secondary dark:text-intelligence-teal font-bold text-headline-md mb-1">99.999%</div>
+                                    <div class="text-label-sm font-label-sm text-on-surface-variant dark:text-white/60">System Reliability</div>
+                                </div>
+                                <div class="glass-panel p-6 rounded-2xl border-l-4 border-crisis-dispatch bg-surface-container-lowest/60 dark:bg-[#0b0f19] border border-outline-variant/30 text-left flex flex-col justify-center">
+                                    <div class="text-crisis-dispatch font-bold text-headline-md mb-1">&lt;0.1s</div>
+                                    <div class="text-label-sm font-label-sm text-on-surface-variant dark:text-white/60">Sync Latency</div>
+                                </div>
+                            </div>
+                        </div>
+                </section>
+                
+                <!-- Intelligence Blocks Section -->
+                <section class="py-24 px-margin-desktop max-w-container-max mx-auto bg-slate-50 dark:bg-transparent">
+                    <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+                        <div class="max-w-xl">
+                            <h2 class="font-headline-lg text-headline-lg mb-4 text-security-blue dark:text-white">High-Density Coordination Architecture</h2>
+                            <p class="text-body-md text-on-surface-variant dark:text-surface-variant/80">Aegis Sentinel centralizes fragmented data streams into a high-fidelity tactical picture for emergency management.</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <button class="p-4 rounded-full border border-outline-variant hover:bg-surface-container dark:hover:bg-white/10 transition-all text-secondary dark:text-white">
+                                <span class="material-symbols-outlined">arrow_back</span>
+                            </button>
+                            <button class="p-4 rounded-full border border-outline-variant hover:bg-surface-container dark:hover:bg-white/10 transition-all text-secondary dark:text-white">
+                                <span class="material-symbols-outlined">arrow_forward</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+                        <!-- Card 1 -->
+                        <div class="group bg-white dark:bg-[#0b0f19] border border-outline-variant/30 dark:border-white/10 rounded-2xl p-base hover:shadow-xl dark:hover:shadow-[0_12px_32px_rgba(0,0,0,0.5)] transition-all duration-300">
+                            <div class="relative h-60 w-full rounded-xl overflow-hidden mb-6">
+                                <img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="High-resolution tactical map of a city grid" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJTZT2xLSybcUQYL_JULwRmF3ascglz1V4W0D7Ype94dy84KOMdnPsJk8sEbgnjbe0JVQrkxo0IIS_KRCVYrmh7zWkDAjZlz8DeIKvbMqB8H0bd2D4MAD598zd4dBT5hUzqRXQ2ptmciWlOn7N_92sEfmnkpxTGAjnJZYJhTA9GbhNt9m5uoW-Kg-9XH-uhmCn5x8zR3j7V6iqPGPITJx7DGklF3TZAu91GxDaZuikhG2ie5-tG2mcoH3wwgBRtqHPmqv0eI8bRyEq">
+                                <div class="absolute top-4 left-4 bg-crisis-dispatch text-white px-3 py-1 rounded-lg text-label-sm font-label-sm flex items-center gap-1 pulse-dispatch font-bold">
+                                    <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">security</span>
+                                    ACTIVE MONITORING
+                                </div>
+                            </div>
+                            <div class="px-2 pb-4">
+                                <h3 class="font-headline-md text-headline-md mb-2 text-security-blue dark:text-white">Signal Verification</h3>
+                                <p class="text-on-surface-variant dark:text-surface-variant/80 text-body-md mb-4">Automated filtering of multi-source data signals to isolate valid crisis events with zero false-positive overhead.</p>
+                                <a class="text-secondary dark:text-intelligence-teal font-label-md flex items-center gap-1 group-hover:gap-2 transition-all font-bold operator-login-trigger" href="#">
+                                    View Protocol <span class="material-symbols-outlined">chevron_right</span>
+                                </a>
+                            </div>
+                        </div>
+                        <!-- Card 2 -->
+                        <div class="group bg-white dark:bg-[#0b0f19] border border-outline-variant/30 dark:border-white/10 rounded-2xl p-base hover:shadow-xl dark:hover:shadow-[0_12px_32px_rgba(0,0,0,0.5)] transition-all duration-300">
+                            <div class="relative h-60 w-full rounded-xl overflow-hidden mb-6 bg-security-blue flex items-center justify-center p-8">
+                                <div class="w-full h-full rounded-lg border border-intelligence-teal/20 flex flex-col justify-between p-6">
+                                    <div class="flex justify-between items-start">
+                                        <div class="w-12 h-12 rounded-full bg-intelligence-teal/10 flex items-center justify-center">
+                                            <span class="material-symbols-outlined text-intelligence-teal">hub</span>
+                                        </div>
+                                        <div class="px-2 py-1 bg-white/10 rounded text-[10px] text-white/40 tracking-widest font-bold">SENTINEL_MESH_V1</div>
+                                    </div>
+                                    <div>
+                                        <div class="h-1 bg-intelligence-teal/20 w-full rounded-full mb-2 overflow-hidden">
+                                            <div class="h-full bg-intelligence-teal w-2/3"></div>
+                                        </div>
+                                        <div class="text-white text-label-sm font-mono">COORDINATING_NODES...</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="px-2 pb-4">
+                                <h3 class="font-headline-md text-headline-md mb-2 text-security-blue dark:text-white">Multi-Agent Sync</h3>
+                                <p class="text-on-surface-variant dark:text-surface-variant/80 text-body-md mb-4">Seamlessly synchronize mobile responder fleets and autonomous sensors for unified site containment.</p>
+                                <a class="text-secondary dark:text-intelligence-teal font-label-md flex items-center gap-1 group-hover:gap-2 transition-all font-bold operator-login-trigger" href="#">
+                                    Network Ops <span class="material-symbols-outlined">chevron_right</span>
+                                </a>
+                            </div>
+                        </div>
+                        <!-- Card 3 -->
+                        <div class="group bg-white dark:bg-[#0b0f19] border border-outline-variant/30 dark:border-white/10 rounded-2xl p-base hover:shadow-xl dark:hover:shadow-[0_12px_32px_rgba(0,0,0,0.5)] transition-all duration-300">
+                            <div class="relative h-60 w-full rounded-xl overflow-hidden mb-6">
+                                <div class="absolute inset-0 bg-gradient-to-br from-security-blue to-black flex items-center justify-center">
+                                    <div class="text-center">
+                                        <div class="text-5xl text-white/10 font-bold mb-2">AEGIS</div>
+                                        <div class="text-intelligence-teal text-headline-lg font-bold">CORE_X</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="px-2 pb-4">
+                                <h3 class="font-headline-md text-headline-md mb-2 text-security-blue dark:text-white">Predictive Analytics</h3>
+                                <p class="text-on-surface-variant dark:text-surface-variant/80 text-body-md mb-4">Advanced Bayesian modeling to anticipate regional crisis hotspots before escalation, enabling preemptive tactical positioning.</p>
+                                <a class="text-secondary dark:text-intelligence-teal font-label-md flex items-center gap-1 group-hover:gap-2 transition-all font-bold operator-login-trigger" href="#">
+                                    Forecast Engine <span class="material-symbols-outlined">chevron_right</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+            
+            <!-- Landing Page Footer -->
+            <footer class="bg-white dark:bg-[#07090e] border-t border-outline-variant/30 dark:border-white/10 w-full pt-12 pb-8">
+                <div class="border-t border-outline-variant/20 dark:border-white/5 px-margin-desktop max-w-container-max mx-auto pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-on-surface-variant/60 dark:text-white/60 font-label-sm text-label-sm">
+                    <span>AEGIS Emergency Intelligence Terminal &copy; 2026 | Developed by Team <b>froge-neo</b> for the <b>Web Data UNLOCKED Hackathon</b></span>
+                    <div class="flex gap-6">
+                        <a class="hover:text-secondary dark:hover:text-intelligence-teal" href="#">X / Twitter</a>
+                        <a class="hover:text-secondary dark:hover:text-intelligence-teal" href="#">LinkedIn</a>
+                        <a class="hover:text-secondary dark:hover:text-intelligence-teal" href="#">Operational Status</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+        <!-- HUD LANDING MAIN (Visible when variant-sentinel-hud is active) -->
+        <div id="landing-main-hud" class="hidden min-h-screen bg-[#0a0c10] text-[#e2e2e6] selection:bg-intelligence-teal/30 relative overflow-hidden font-body-md pt-20">
+            <!-- Scanline scrolling and vignette/glow filters -->
+            <div class="scanline"></div>
+            
+            <main class="relative z-10 px-margin-desktop max-w-container-max mx-auto">
+                <!-- Immersive HUD Hero Section -->
+                <section class="relative min-h-[85vh] w-full overflow-hidden flex items-center py-12">
+                    <!-- HUD Grid Overlay -->
+                    <div class="absolute inset-0 z-0 opacity-20 pointer-events-none bg-[radial-gradient(rgba(0,207,181,0.15)_1px,transparent_1px)]" style="background-size: 32px 32px;"></div>
+                    
+                    <!-- Hero Background Video Loop -->
+                    <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
+                        <video autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover opacity-80">
+                            <source src="background.mp4" type="video/mp4">
+                        </video>
+                        <div class="absolute inset-0 bg-gradient-to-r from-[#0a0c10]/95 via-[#0a0c10]/50 to-transparent"></div>
+                    </div>
+                    
+                    <div class="w-full flex flex-col lg:flex-row items-center gap-12 lg:gap-24 relative z-10">
+                        <!-- Left HUD text console -->
+                        <div class="w-full lg:w-1/2">
+                            <div class="inline-flex items-center gap-3 mb-6">
+                                <div class="w-12 h-[1px] bg-intelligence-teal"></div>
+                                <span class="mono-tech text-label-sm text-intelligence-teal uppercase tracking-[0.3em] font-bold">System Protocol: Alpha-1</span>
+                            </div>
+                            
+                            <h1 class="font-display-lg text-[3.8rem] lg:text-[5.5rem] text-white mb-6 leading-[0.95] tracking-tighter uppercase font-extrabold mono-tech">
+                                AEGIS <br><span class="text-intelligence-teal">SENTINEL</span>
+                            </h1>
+                            
+                            <div class="hud-border p-6 bg-black/60 backdrop-blur-md max-w-xl mb-10 border border-intelligence-teal/20 rounded-lg">
+                                <p class="mono-tech text-label-md text-on-surface-variant/90 leading-relaxed text-xs lg:text-sm">
+                                    &gt; Multi-Agent Emergency Coordination Terminal<br>
+                                    &gt; Initializing sub-second verification layer... [OK]<br>
+                                    &gt; Synchronizing agent grid nodes... [READY]<br>
+                                    &gt; Chaos neutralization protocols engaged.
+                                </p>
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-6">
+                                <button class="bg-intelligence-teal hover:bg-white text-background font-extrabold mono-tech text-[13px] px-10 py-5 flex items-center gap-3 transition-all tracking-wider rounded border border-intelligence-teal active:scale-95 operator-login-trigger">
+                                    INITIALIZE_DEPLOYMENT
+                                    <span class="material-symbols-outlined text-lg">terminal</span>
+                                </button>
+                                <button class="border border-white/20 hover:border-white text-white font-extrabold mono-tech text-[13px] px-10 py-5 flex items-center gap-3 transition-all bg-white/5 active:scale-95 operator-login-trigger">
+                                    VIEW_SITREP
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Right HUD dashboard indicators -->
+                        <div class="w-full lg:w-1/2 flex flex-col gap-6">
+                            <!-- HUD Radar simulation box -->
+                            <div class="hud-border bg-black/40 backdrop-blur-sm p-6 rounded-xl flex flex-col gap-4 border border-intelligence-teal/10">
+                                <div class="flex justify-between items-center border-b border-intelligence-teal/20 pb-3">
+                                    <span class="text-xs mono-tech text-intelligence-teal font-bold uppercase tracking-wider">📡 ACTIVE_GRID_MONITOR</span>
+                                    <span class="text-[10px] mono-tech text-on-surface-variant/40">COORD: 34.0522° N | 118.2437° W</span>
+                                </div>
+                                <div class="h-44 w-full bg-[#07090d]/80 rounded relative flex items-center justify-center overflow-hidden border border-white/5">
+                                    <div class="radar-scan"></div>
+                                    <div class="absolute inset-0 opacity-15 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none"></div>
+                                    <!-- Scanning text display -->
+                                    <div class="absolute bottom-4 left-4 flex flex-col gap-1 text-[9px] mono-tech text-intelligence-teal/60">
+                                        <span>RANGE: 50KM</span>
+                                        <span>RADAR_SCAN: ACTIVE</span>
+                                    </div>
+                                    <div class="absolute top-4 right-4 flex items-center gap-1 text-[9px] mono-tech text-status-critical animate-pulse font-bold">
+                                        <span class="w-2 h-2 rounded-full bg-status-critical"></span>
+                                        <span>SYS_THREAT_DETECTED</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Floating Data cards -->
+                            <div class="flex gap-4">
+                                <div class="hud-border bg-black/40 p-4 min-w-[200px] flex-1 rounded border border-intelligence-teal/15">
+                                    <div class="text-[10px] mono-tech text-on-surface-variant/50 mb-1">LATENCY_VERIFICATION</div>
+                                    <div class="text-2xl font-bold text-intelligence-teal mono-tech">0.004s</div>
+                                </div>
+                                <div class="hud-border bg-black/40 p-4 min-w-[200px] flex-1 rounded border border-intelligence-teal/15">
+                                    <div class="text-[10px] mono-tech text-on-surface-variant/50 mb-1">AGENT_ID</div>
+                                    <div class="text-2xl font-bold text-white mono-tech">AEGIS-01</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Situational Awareness Section -->
+                <section class="py-24 border-t border-intelligence-teal/10">
+                    <div class="flex flex-col lg:flex-row justify-between items-start mb-16 gap-8">
+                        <div class="max-w-2xl">
+                            <div class="text-intelligence-teal mono-tech text-[12px] mb-2 uppercase tracking-widest font-bold">Global Ops / Terminal_Interface</div>
+                            <h2 class="font-headline-lg text-3xl lg:text-4xl mb-6 text-white font-extrabold tracking-tight">Mission Critical Situational Awareness</h2>
+                            <p class="text-body-md text-on-surface-variant/80 mono-tech text-[13px] leading-relaxed">AEGIS SENTINEL synthesizes disparate data vectors into actionable tactical directives. Zero-lag coordination for high-stakes environments.</p>
+                        </div>
+                        <div class="flex flex-col items-end gap-2 text-right">
+                            <div class="text-[10px] mono-tech text-intelligence-teal/60">ACTIVE_GRID_MONITOR</div>
+                            <div class="h-2 w-32 bg-white/5 rounded-full overflow-hidden border border-intelligence-teal/20">
+                                <div class="h-full bg-intelligence-teal w-3/4 animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Terminal Block 1 -->
+                        <div class="hud-border bg-black/30 p-1 group border border-intelligence-teal/10 rounded-xl">
+                            <div class="relative aspect-video overflow-hidden rounded-t-lg">
+                                <img alt="Data Stream" class="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity duration-700 grayscale group-hover:grayscale-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJTZT2xLSybcUQYL_JULwRmF3ascglz1V4W0D7Ype94dy84KOMdnPsJk8sEbgnjbe0JVQrkxo0IIS_KRCVYrmh7zWkDAjZlz8DeIKvbMqB8H0bd2D4MAD598zd4dBT5hUzqRXQ2ptmciWlOn7N_92sEfmnkpxTGAjnJZYJhTA9GbhNt9m5uoW-Kg-9XH-uhmCn5x8zR3j7V6iqPGPITJx7DGklF3TZAu91GxDaZuikhG2ie5-tG2mcoH3wwgBRtqHPmqv0eI8bRyEq">
+                                <div class="absolute top-2 left-2 px-2 py-0.5 bg-status-critical text-white mono-tech text-[9px] font-bold">EVENT_DETECTED</div>
+                            </div>
+                            <div class="p-6">
+                                <div class="text-[10px] mono-tech text-intelligence-teal mb-2">MODULE // VERIFIER_v4</div>
+                                <h3 class="text-lg font-bold text-white mb-2 tracking-tight">Neural Verification</h3>
+                                <p class="text-on-surface-variant/70 mono-tech text-[11px] mb-6 leading-relaxed">Autonomous parsing of unstructured signals to identify verified emergency anchors with 99.98% certainty.</p>
+                                <button class="text-intelligence-teal mono-tech text-[10px] font-bold flex items-center gap-2 group-hover:gap-4 transition-all active:scale-95 operator-login-trigger">
+                                    &gt; EXECUTE_PROTOCOL
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Terminal Block 2 -->
+                        <div class="hud-border bg-black/30 p-1 group border border-intelligence-teal/10 rounded-xl">
+                            <div class="relative aspect-video overflow-hidden flex items-center justify-center bg-black/80 rounded-t-lg p-6">
+                                <div class="w-full h-full flex flex-col">
+                                    <div class="flex justify-between border-b border-intelligence-teal/20 pb-2 mb-4">
+                                        <span class="text-[8px] mono-tech text-intelligence-teal">SYS_COORD_Z8</span>
+                                        <span class="text-[8px] mono-tech text-intelligence-teal/40">ENCRYPT:AES-256</span>
+                                    </div>
+                                    <div class="space-y-2 mb-4">
+                                        <div class="h-1 bg-intelligence-teal/30 w-full rounded-full"></div>
+                                        <div class="h-1 bg-intelligence-teal/30 w-4/5 rounded-full"></div>
+                                        <div class="h-1 bg-intelligence-teal w-3/5 rounded-full"></div>
+                                    </div>
+                                    <div class="mt-auto text-center">
+                                        <span class="material-symbols-outlined text-intelligence-teal text-3xl animate-pulse">hub</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <div class="text-[10px] mono-tech text-intelligence-teal mb-2">MODULE // FLEET_SYNC</div>
+                                <h3 class="text-lg font-bold text-white mb-2 tracking-tight">Agent Orchestration</h3>
+                                <p class="text-on-surface-variant/70 mono-tech text-[11px] mb-6 leading-relaxed">Real-time bi-directional telemetry link to all active response agents. Dynamic routing via encrypted channels.</p>
+                                <button class="text-intelligence-teal mono-tech text-[10px] font-bold flex items-center gap-2 group-hover:gap-4 transition-all active:scale-95 operator-login-trigger">
+                                    &gt; SYNCHRONIZE_UNITS
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Terminal Block 3 -->
+                        <div class="hud-border bg-black/30 p-1 group border border-intelligence-teal/10 rounded-xl">
+                            <div class="relative aspect-video overflow-hidden flex items-center justify-center bg-intelligence-teal/5 rounded-t-lg">
+                                <div class="text-center">
+                                    <div class="text-3xl font-extrabold text-white/5 mono-tech leading-none">FORECAST</div>
+                                    <div class="text-intelligence-teal mono-tech text-xs mt-1">PREDICTIVE_CORE_01</div>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <div class="text-[10px] mono-tech text-intelligence-teal mb-2">MODULE // ANALYTICS_CORE</div>
+                                <h3 class="text-lg font-bold text-white mb-2 tracking-tight">Strategic Forecasting</h3>
+                                <p class="text-on-surface-variant/70 mono-tech text-[11px] mb-6 leading-relaxed">Historical pattern extrapolation to anticipate crisis clusters. Preemptive resource allocation protocols.</p>
+                                <button class="text-intelligence-teal mono-tech text-[10px] font-bold flex items-center gap-2 group-hover:gap-4 transition-all active:scale-95 operator-login-trigger">
+                                    &gt; ACCESS_INSIGHTS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+            
+            <!-- HUD Footer -->
+            <footer class="bg-black/80 border-t border-intelligence-teal/15 pt-12 pb-8 w-full mt-24">
+                <div class="border-t border-intelligence-teal/10 px-margin-desktop max-w-container-max mx-auto pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-on-surface-variant/40 mono-tech text-[10px] uppercase">
+                    <span>AEGIS Emergency Intelligence Terminal © 2026 | Developed by Team froge-neo for the Web Data UNLOCKED Hackathon | Powered by Leaflet, Speechmatics, Bright Data &amp; Gemini 3.5.</span>
+                    <div class="flex gap-6">
+                        <a class="hover:text-intelligence-teal" href="#">TERMINAL_X</a>
+                        <a class="hover:text-intelligence-teal" href="#">LINKED_NODES</a>
+                        <span class="text-status-success flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-status-success"></span> GLOBAL_OPS_OK
+                        </span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- CORE TERMINAL DASHBOARD CONTAINER (Visible after authorization verification) -->
+    <div id="dashboard-container" class="hidden">
+        <header class="app-header">
+        <div class="header-logo">
+            <span class="logo-icon">🛡️</span>
+            <div class="logo-text">
+                <h1>AEGIS SENTINEL</h1>
+                <p>Multi-Agent Emergency Coordination Terminal</p>
+            </div>
+        </div>
+        
+        <div class="pipeline-status">
+            <div class="status-indicator">
+                <span class="indicator-dot status-idle" id="global-status-dot"></span>
+                <span class="status-label" id="global-status-text">SYSTEM STANDBY</span>
+            </div>
+            
+            <button class="settings-btn" id="dashboard-theme-toggle-btn" aria-label="Toggle Theme" style="margin-right: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                <span class="theme-icon" style="font-size: 1.15rem;">☀️</span>
+            </button>
+            
+            <button class="settings-btn" id="settings-toggle-btn" aria-label="Settings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="settings-modal hidden" id="settings-panel">
+        <div class="settings-content glass-card">
+            <h3>Configuration Settings</h3>
+            
+            <!-- SECTION 1: MAP ENGINE SETTINGS -->
+            <div class="settings-section-title">🗺️ Map & Visualization Engine</div>
+            <div class="form-group">
+                <label for="settings-map-theme">Base Map Style Layer</label>
+                <select id="settings-map-theme" class="styled-select">
+                    <option value="dark" selected>🌌 CartoDB Dark Matter (Sleek Dark)</option>
+                    <option value="voyager">🏙️ CartoDB Voyager (Vibrant Light Streets)</option>
+                    <option value="osm">🗺️ OpenStreetMap (Detailed Standard)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="settings-radar-opacity" style="display: flex; justify-content: space-between;">
+                    <span>🌧️ Radar Precipitation Opacity</span>
+                    <span id="radar-opacity-lbl" style="font-family: var(--font-mono); color: var(--color-resource);">65%</span>
+                </label>
+                <input type="range" id="settings-radar-opacity" min="10" max="100" value="65" class="styled-range">
+            </div>
+
+            <!-- SECTION 2: AUDIO & SIREN BEACON -->
+            <div class="settings-section-title">🔊 Audio & Distress Beacon</div>
+            <div class="form-group">
+                <label for="settings-siren-volume" style="display: flex; justify-content: space-between;">
+                    <span>🚨 SOS Distress Siren Volume</span>
+                    <span id="siren-volume-lbl" style="font-family: var(--font-mono); color: var(--color-hazard);">50%</span>
+                </label>
+                <input type="range" id="settings-siren-volume" min="0" max="100" value="50" class="styled-range">
+            </div>
+
+            <!-- SECTION 3: INTEGRATION SANDBOX -->
+            <div class="settings-section-title">🔌 Integration Webhooks Sandbox</div>
+            <div class="form-group">
+                <label for="settings-webhook-url">Target Webhook Target URL</label>
+                <input type="text" id="settings-webhook-url" value="https://hooks.slack.com/services/mock-crisis-endpoint" class="styled-input" style="padding: 0.5rem 0.75rem; font-size: 0.75rem;">
+            </div>
+            
+            <div class="settings-row">
+                <button class="btn btn-secondary" id="settings-webhook-test-btn" style="flex: 1; font-size: 0.7rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                    💬 Test Slack Webhook
+                </button>
+                <button class="btn btn-secondary" id="settings-mock-broadcast-btn" style="flex: 1; font-size: 0.7rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.25rem; border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
+                    📢 Test Cell Warning
+                </button>
+            </div>
+
+            <div class="settings-actions">
+                <button class="btn btn-primary" id="settings-close-btn">Close Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="dashboard-grid">
+        <!-- COLUMN 1: CONTROLS & ASR -->
+        <section class="grid-col glass-card" id="col-controls">
+            <h2 class="section-title"><span class="icon">🎛️</span> Pipeline Controls</h2>
+            
+            <div class="control-widget">
+                <label class="widget-label">Execution Mode</label>
+                <div class="toggle-switch-container">
+                    <button class="toggle-option active" id="mode-simulated-btn">Simulated Demo</button>
+                    <button class="toggle-option" id="mode-production-btn">Live Production</button>
+                </div>
+                <p class="input-info">Simulated loads pre-built data instantly without consuming Speechmatics or Gemini credits.</p>
+            </div>
+
+            <div class="control-widget">
+                <label class="widget-label">Audio Ingestion Source</label>
+                <div class="toggle-switch-container">
+                    <button class="toggle-option active" id="source-radio-btn">📻 Radio Feed</button>
+                    <button class="toggle-option" id="source-mic-btn">🎙️ Manual Mic</button>
+                </div>
+            </div>
+
+            <div class="control-widget hidden" id="mic-recorder-widget">
+                <label class="widget-label">Live Voice Control</label>
+                <div class="mic-recorder-panel card-inner" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem;">
+                    <button class="mic-record-btn" id="mic-record-btn" type="button" aria-label="Record Microphone">
+                        <span class="mic-icon">🎙️</span>
+                        <span class="mic-pulse-ring"></span>
+                    </button>
+                    <div class="mic-details" style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                        <span class="mic-status-label" id="mic-status-label" style="font-size: 0.75rem; font-weight: 600; color: var(--text-primary);">Tap Mic to Record</span>
+                        <span class="mic-timer-label" id="mic-timer-label" style="font-size: 0.7rem; font-family: var(--font-mono); color: var(--text-secondary);">00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-widget">
+                <label class="widget-label">Target Location Scale</label>
+                <div class="country-chips-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; width: 100%;">
+                    <button class="toggle-option active country-chip" id="chip-world" data-country="world" style="font-size: 0.75rem; padding: 0.4rem 0;">🌐 World</button>
+                    <button class="toggle-option country-chip" id="chip-india" data-country="india" style="font-size: 0.75rem; padding: 0.4rem 0;">🇮🇳 India</button>
+                    <button class="toggle-option country-chip" id="chip-japan" data-country="japan" style="font-size: 0.75rem; padding: 0.4rem 0;">🇯🇵 Japan</button>
+                    <button class="toggle-option country-chip" id="chip-usa" data-country="usa" style="font-size: 0.75rem; padding: 0.4rem 0;">🇺🇸 USA</button>
+                    <button class="toggle-option country-chip" id="chip-uk" data-country="uk" style="font-size: 0.75rem; padding: 0.4rem 0;">🇬🇧 UK</button>
+                    <button class="toggle-option country-chip" id="chip-local" data-country="local" style="font-size: 0.75rem; padding: 0.4rem 0; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2); color: var(--color-safe); display: flex; align-items: center; justify-content: center; gap: 0.25rem;">📍 Localize</button>
+                </div>
+            </div>
+
+            <div class="control-widget">
+                <label for="serp-query-input" class="widget-label">Bright Data SERP Query</label>
+                <input type="text" id="serp-query-input" value="emergency response Broadway Street fire disaster" class="styled-input">
+            </div>
+
+            <div class="run-action-container">
+                <button class="run-pipeline-btn" id="run-pipeline-trigger">
+                    <span class="btn-glow"></span>
+                    <span class="btn-text">TRIGGER CRISIS PIPELINE</span>
+                    <div class="btn-loader hidden" id="btn-spinner"></div>
+                </button>
+            </div>
+
+            <!-- SOS & Escape Assistance Kit -->
+            <div class="sub-panel glass-card card-inner" id="survival-kit-panel" style="margin-bottom: 1rem; border-color: rgba(239, 68, 68, 0.2);">
+                <h3 class="panel-subtitle" style="color: #f87171;"><span class="icon">🛡️</span> SOS & Escape Assistance Kit</h3>
+                
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button class="btn btn-primary" id="sos-beacon-btn" style="flex: 1; background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); font-weight: 700; font-size: 0.75rem; padding: 0.5rem 0; border-radius: 30px; display: flex; align-items: center; justify-content: center; gap: 0.4rem; cursor: pointer; color: white; transition: all 0.3s ease;">
+                        <span class="beacon-icon">🚨</span> Trigger SOS Siren
+                    </button>
+                    <button class="btn btn-secondary" id="clear-route-btn" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: var(--text-secondary); font-size: 0.7rem; font-weight: 600; padding: 0.5rem 0; border-radius: 30px; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 0.3rem;">
+                        🧹 Clear Route
+                    </button>
+                </div>
+
+                <div class="survival-guide-container" id="survival-guide-container" style="margin-top: 0.75rem; display: none;">
+                    <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-primary); text-transform: uppercase; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.25rem;">
+                        <span>📋</span> <span id="survival-checklist-title">Active Disaster Survival Checklist</span>
+                    </div>
+                    <div id="disaster-survival-checklist" style="display: flex; flex-direction: column; gap: 0.35rem; max-height: 120px; overflow-y: auto; padding-right: 0.2rem;">
+                        <!-- checklist items populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Agent Coordination Network -->
+            <div class="sub-panel glass-card card-inner" id="multi-agent-hub" style="margin-bottom: 1rem; border-color: rgba(139, 92, 246, 0.25);">
+                <h3 class="panel-subtitle" style="color: var(--color-primary);"><span class="icon">🤖</span> Multi-Agent Coordination Network</h3>
+                <div class="agents-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; text-align: center; margin-top: 0.5rem;">
+                    <div class="agent-node" id="node-agent-asr">
+                        <div class="agent-avatar asr">🎙️</div>
+                        <div class="agent-name" style="font-size: 0.6rem; font-weight: 700; color: var(--text-secondary); margin-top: 0.25rem;">ASR Ingest</div>
+                        <div class="agent-status-dot idle" id="dot-agent-asr" style="width: 6px; height: 6px; border-radius: 50%; background: #64748b; margin: 0.25rem auto 0;"></div>
+                    </div>
+                    <div class="agent-node" id="node-agent-search">
+                        <div class="agent-avatar search">🌐</div>
+                        <div class="agent-name" style="font-size: 0.6rem; font-weight: 700; color: var(--text-secondary); margin-top: 0.25rem;">Web Search</div>
+                        <div class="agent-status-dot idle" id="dot-agent-search" style="width: 6px; height: 6px; border-radius: 50%; background: #64748b; margin: 0.25rem auto 0;"></div>
+                    </div>
+                    <div class="agent-node" id="node-agent-reasoning">
+                        <div class="agent-avatar reasoning">🧠</div>
+                        <div class="agent-name" style="font-size: 0.6rem; font-weight: 700; color: var(--text-secondary); margin-top: 0.25rem;">AI Reason</div>
+                        <div class="agent-status-dot idle" id="dot-agent-reasoning" style="width: 6px; height: 6px; border-radius: 50%; background: #64748b; margin: 0.25rem auto 0;"></div>
+                    </div>
+                    <div class="agent-node" id="node-agent-automation">
+                        <div class="agent-avatar automation">⚙️</div>
+                        <div class="agent-name" style="font-size: 0.6rem; font-weight: 700; color: var(--text-secondary); margin-top: 0.25rem;">Alert Exec</div>
+                        <div class="agent-status-dot idle" id="dot-agent-automation" style="width: 6px; height: 6px; border-radius: 50%; background: #64748b; margin: 0.25rem auto 0;"></div>
+                    </div>
+                </div>
+                <div class="agent-thoughts-box" id="agent-thoughts-text" style="font-size: 0.65rem; color: var(--text-secondary); line-height: 1.45; background: rgba(0,0,0,0.25); border: 1px solid var(--card-border); padding: 0.5rem; border-radius: var(--border-radius-sm); margin-top: 0.5rem; font-style: italic; min-height: 38px;">
+                         <!-- Atmospheric Telemetry & Missed Insights Hub -->
+            <div class="sub-panel glass-card card-inner" id="aegis-widgets-panel" style="margin-bottom: 1rem; border-color: rgba(59, 130, 246, 0.25);">
+                <h3 class="panel-subtitle" style="color: var(--color-resource); display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem;">
+                    <span>📰 Sentinel Alerts & Insights</span>
+                    <span style="font-size: 1.1rem; cursor: pointer; color: var(--text-muted);" id="widget-add-btn" title="Add Alert Widget">+</span>
+                </h3>
+                
+                <!-- Paging Notifications Deck -->
+                <div class="aegis-notifications-card" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: var(--border-radius-md); padding: 0.65rem; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                        <span style="font-size: 0.7rem; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 0.3rem;">
+                            <span>🔔</span> <span id="notification-count-label">7 Notifications</span>
+                        </span>
+                        <span style="cursor: pointer; font-size: 0.75rem; color: var(--text-muted);" onclick="this.parentElement.parentElement.style.display='none'">✕</span>
+                    </div>
+                    
+                    <div id="aegis-notifications-slider" style="display: flex; flex-direction: column; min-height: 60px; justify-content: center;">
+                        <!-- dynamic items populated by JS -->
+                        <div class="notification-item active">
+                            <div style="font-size: 0.6rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                                <span>Telemetry insight • 9m</span>
+                            </div>
+                            <div style="font-size: 0.75rem; font-weight: 700; color: white; margin-top: 0.15rem; line-height: 1.35;">High UV. Reduce time in the sun.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Slider Dots -->
+                    <div style="display: flex; justify-content: center; gap: 0.35rem; margin-top: 0.5rem;" id="notification-dots">
+                        <span class="slider-dot active" data-index="0" style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-resource); cursor: pointer; display: inline-block; transition: all 0.2s;"></span>
+                        <span class="slider-dot" data-index="1" style="width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; display: inline-block; transition: all 0.2s;"></span>
+                        <span class="slider-dot" data-index="2" style="width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; display: inline-block; transition: all 0.2s;"></span>
+                    </div>
+                </div>
+
+                <!-- Atmospheric Telemetry Mini-Widget Card -->
+                <div class="aegis-telemetry-widget" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.03) 100%); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: var(--border-radius-md); padding: 0.65rem; margin-top: 0.65rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 0.25rem;">
+                            <span style="font-size: 0.75rem; color: white; font-weight: 700;" id="telemetry-city-name">Mangaluru</span>
+                            <span style="font-size: 0.55rem; color: var(--text-muted);">▼</span>
+                        </div>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;" title="Refresh local telemetry">•••</span>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <span id="telemetry-temp-icon" style="font-size: 1.6rem;">☀️</span>
+                            <span id="telemetry-temp-value" style="font-size: 1.6rem; font-weight: 700; font-family: var(--font-title); color: white;">32<span style="font-size: 0.95rem; vertical-align: top; font-weight: 500;">°C</span></span>
+                        </div>
+                        <div style="font-size: 0.65rem; color: #ffedd5; line-height: 1.3; flex: 1; text-align: right; font-style: italic;" id="telemetry-alert-text">
+                            Expect 4 days with hot weather ahead starting Tomorrow.
+                        </div>
+                    </div>
+                    
+                    <button class="styled-prognosis-btn" id="telemetry-prognosis-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; color: var(--text-primary); font-size: 0.65rem; font-weight: 600; padding: 0.35rem 0; width: 100%; cursor: pointer; text-align: center; transition: var(--transition-smooth); margin-top: 0.2rem;">
+                        See full prognosis
+                    </button>
+                </div>
+            </div>
+
+            <!-- Speechmatics Audio Player & Transcript -->
+            <div class="sub-panel glass-card card-inner">
+                <h3 class="panel-subtitle"><span class="icon">🎙️</span> Speechmatics ASR Feed</h3>
+                
+                <div class="audio-visualizer-container">
+                    <canvas id="waveform-canvas"></canvas>
+                    <div class="audio-control-bar">
+                        <span class="audio-duration" id="audio-timer">00:00</span>
+                        <div class="waveform-bar-sim"></div>
+                        <span class="audio-badge" id="audio-badge">emergency_radio.mp3</span>
+                    </div>
+                </div>
+
+                <div class="terminal-container">
+                    <div class="terminal-header">
+                        <span class="terminal-title">LIVE ASR TRANSCRIPT</span>
+                        <span class="terminal-dot green"></span>
+                    </div>
+                    <div class="terminal-body" id="transcription-output">
+                        <span class="terminal-placeholder">System awaiting audio ingestion broadcast stream...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUMN 2: GOOGLE EARTH / MAP VISUALIZER -->
+        <section class="grid-col map-column" id="col-map">
+            <div class="map-container glass-card">
+                <div class="map-header">
+                    <h2 class="section-title"><span class="icon">🗺️</span> Google Earth Dispatch Map</h2>
+                    <div class="map-layer-indicator">
+                        <span class="layer-pill">🛰️ SATELLITE HYBRID</span>
+                    </div>
+                </div>
+                
+                <!-- Google Maps Embed Target -->
+                <div class="google-earth-viewport">
+                    <div id="google-map-target" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
+                    
+                    <!-- Floating AEGIS Radar Layers Menu -->
+                    <div class="radar-layers-control" id="radar-layers-control">
+                        <button class="layers-toggle-btn" id="layers-toggle-btn" aria-label="Toggle Radar Layers">
+                            <span class="icon">🌦️</span> <span class="btn-lbl">Radar Layers</span>
+                        </button>
+                        <div class="layers-dropdown glass-card hidden" id="layers-dropdown">
+                            <label class="dropdown-item">
+                                <input type="checkbox" id="layer-radar-checkbox" checked>
+                                <span class="layer-name">🌧️ Live Radar Overlay</span>
+                            </label>
+                            <label class="dropdown-item">
+                                <input type="checkbox" id="layer-darkmatter-checkbox" checked>
+                                <span class="layer-name">🗺️ Dark Matter Map</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Floating AEGIS Radar Player Timeline Bar -->
+                    <div class="radar-timeline-bar glass-card" id="radar-timeline-bar">
+                        <button class="radar-play-btn" id="radar-play-btn" aria-label="Play Radar Loop">▶</button>
+                        <div class="radar-progress-container">
+                            <div class="radar-progress-track">
+                                <div class="radar-progress-fill" id="radar-progress-fill"></div>
+                            </div>
+                            <div class="radar-time-steps" id="radar-time-steps">
+                                <!-- Steps populated dynamically -->
+                            </div>
+                        </div>
+                        <div class="radar-time-label" id="radar-time-label">Loading radar...</div>
+                    </div>
+
+                    <!-- Geolocation Fallback Visualizer when Map hasn't loaded -->
+                    <div class="map-fallback-overlay" id="map-fallback-view">
+                        <div class="radar-scan"></div>
+                        <div class="coordinate-crosshair"></div>
+                        <div class="map-instructions">
+                            <h3>Awaiting Coordinate Broadcast</h3>
+                            <p>Map will glide and lock on locations once the Gemini Reasoning engine validates dispatch alerts.</p>
+                            <span class="geo-readout" id="coordinate-readout">LAT: ---.---- | LNG: ---.----</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Map Legend Panel -->
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <span class="legend-color hazard-glow"></span>
+                        <span class="legend-text">Hazard Zone</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color safezone-glow"></span>
+                        <span class="legend-text">Safe Area</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color resource-glow"></span>
+                        <span class="legend-text">Resource Point</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUMN 3: RESULTS, COGNEE & TRIGGERWARE -->
+        <section class="grid-col glass-card" id="col-outputs">
+            <h2 class="section-title"><span class="icon">🧠</span> Verified Insights</h2>
+
+            <!-- Real-time Step Timeline -->
+            <div class="pipeline-timeline glass-card card-inner">
+                <div class="timeline-step" id="step-asr">
+                    <div class="step-num">1</div>
+                    <div class="step-details">
+                        <h4>Audio Ingestion</h4>
+                        <p class="step-status">Pending</p>
+                    </div>
+                </div>
+                <div class="timeline-step" id="step-serp">
+                    <div class="step-num">2</div>
+                    <div class="step-details">
+                        <h4>Bright Data Search</h4>
+                        <p class="step-status">Pending</p>
+                    </div>
+                </div>
+                <div class="timeline-step" id="step-gemini">
+                    <div class="step-num">3</div>
+                    <div class="step-details">
+                        <h4>Gemini AI Reasoning</h4>
+                        <p class="step-status">Pending</p>
+                    </div>
+                </div>
+                <div class="timeline-step" id="step-memory">
+                    <div class="step-num">4</div>
+                    <div class="step-details">
+                        <h4>Cognee & TriggerWare</h4>
+                        <p class="step-status">Pending</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Deck -->
+            <div class="sub-panel card-inner">
+                <h3 class="panel-subtitle"><span class="icon">🎯</span> Geocoded Dispatch Nodes</h3>
+                <div class="insights-deck-scroll" id="insights-cards-container">
+                    <div class="no-data-card">
+                        <p>No verified crisis entries logged yet. Run the pipeline to populate.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cognee Memory & Triggerware Action Webhooks -->
+            <div class="sub-panel card-inner">
+                <h3 class="panel-subtitle"><span class="icon">💾</span> Memory & Automation Alerts</h3>
+                
+                <div class="terminal-container small-terminal">
+                    <div class="terminal-header">
+                        <span class="terminal-title">COGNEE DATABASE MEMORY GRAPH</span>
+                    </div>
+                    <div class="terminal-body memory-terminal" id="cognee-memory-logs">
+                        <span class="console-line text-muted">> Graph Database connection idle...</span>
+                    </div>
+                </div>
+
+                <div class="terminal-container small-terminal">
+                    <div class="terminal-header">
+                        <span class="terminal-title">TRIGGERWARE ACTION LOG</span>
+                    </div>
+                    <div class="terminal-body alert-terminal" id="triggerware-alerts-logs">
+                        <span class="console-line text-muted">> Automation workflows standing by...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bright Data Google Serp Result Context -->
+            <div class="sub-panel card-inner">
+                <h3 class="panel-subtitle"><span class="icon">🌐</span> Google SERP Verification Cards</h3>
+                <div class="serp-accordion" id="serp-accordion-target">
+                    <div class="no-data-card mini">
+                        <p>Search verification deck idle.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Output System Console Logs -->
+            <div class="terminal-container system-logs-container">
+                <div class="terminal-header">
+                    <span class="terminal-title">SYSTEM EVENT LOGS</span>
+                    <button class="clear-terminal-btn" id="logs-clear-btn">Clear Logs</button>
+                </div>
+                <div class="terminal-body log-console" id="system-event-logs">
+                    <span class="console-line text-info">> Ready to trigger...</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 5-Day Atmospheric Prognosis Overlay Modal (AEGIS-Style) -->
+    <div class="settings-modal hidden" id="prognosis-overlay-modal" style="z-index: 1500; background: rgba(0, 0, 0, 0.8);">
+        <div class="settings-content glass-card" style="max-width: 600px; padding: 1.5rem; gap: 1rem; border-color: rgba(59, 130, 246, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
+                <h3 style="font-family: var(--font-title); font-size: 1.15rem; color: white; display: flex; align-items: center; gap: 0.4rem; border: none; padding: 0; margin: 0;">
+                    <span id="prognosis-modal-title">⛅ 5-Day Atmospheric Prognosis</span>
+                </h3>
+                <span style="cursor: pointer; font-size: 1.1rem; color: var(--text-muted); font-weight: bold;" id="prognosis-close-x">✕</span>
+            </div>
+            
+            <p style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 0.25rem;">
+                Multi-agent regional atmospheric grid simulation. Analysis updated by **AI Atmospheric Reasoner** 9 minutes ago.
+            </p>
+            
+            <!-- Prognosis Chart Grid -->
+            <div class="forecast-grid-container" style="display: flex; flex-direction: column; gap: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: var(--border-radius-md); padding: 0.75rem;">
+                <!-- 5 days dynamically built with progress bar graphs -->
+                <div id="prognosis-days-list" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                    <!-- days populated by JS -->
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; color: #fbbf24; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15); padding: 0.5rem; border-radius: var(--border-radius-sm);" id="prognosis-modal-alert">
+                <span>⚠️</span> <span id="prognosis-modal-alert-text">Expect 4 days with hot weather ahead starting Tomorrow.</span>
+            </div>
+            
+            <div class="settings-actions" style="margin-top: 0.25rem; border-top: none; padding-top: 0; margin-top: 0;">
+                <button class="btn btn-primary" id="prognosis-close-btn">Close Prognosis</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <p>AEGIS Emergency Intelligence Terminal &copy; 2026 | Developed by Team <b>froge-neo</b> for the <b>Web Data UNLOCKED Hackathon</b> | Powered by Leaflet, Speechmatics, Bright Data & Gemini 3.5.</p>
+    </footer>
+    </div>
+
+    <!-- Operator Login Modal -->
+    <div class="settings-modal hidden" id="login-modal" style="z-index: 2000; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center;">
+        <div class="settings-content glass-card" style="max-width: 420px; padding: 2rem; gap: 1.2rem; border-color: rgba(59, 130, 246, 0.3); display: flex; flex-direction: column; width: 100%;">
+            <div style="text-align: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 2.5rem;">🛡️</span>
+                <h3 style="font-family: var(--font-title); font-size: 1.4rem; color: white; margin-top: 0.5rem; border: none; padding: 0; margin-bottom: 0.25rem;">OPERATOR AUTHORIZATION</h3>
+                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.25rem; font-family: var(--font-mono); letter-spacing: 1px;">AEGIS SENTINEL SECURE ACCESS</p>
+            </div>
+            
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                <label for="login-operator-id" style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary);">OPERATOR INITIALS / ID</label>
+                <input type="text" id="login-operator-id" value="AEGIS-01" class="styled-input" style="text-align: center; letter-spacing: 2px; font-weight: bold; font-family: var(--font-mono); font-size: 0.95rem; width: 100%;">
+            </div>
+            
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                <label for="login-passcode" style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary);">SECURE ACCESS CODE</label>
+                <input type="password" id="login-passcode" value="1234" class="styled-input" style="text-align: center; letter-spacing: 4px; font-weight: bold; font-size: 0.95rem; width: 100%;">
+            </div>
+            
+            <div id="login-error-msg" style="color: #ef4444; font-size: 0.7rem; text-align: center; display: none; font-weight: bold; font-family: var(--font-mono); margin-top: 0.25rem;">
+                ⚠️ SECURITY ERROR: INVALID OPERATOR ACCESS CODE
+            </div>
+
+            <button class="run-pipeline-btn" id="login-authorize-btn" style="margin-top: 0.5rem; width: 100%;">
+                <span class="btn-glow"></span>
+                <span class="btn-text">AUTHORIZE ACCESS</span>
+            </button>
+            
+            <div style="text-align: center; margin-top: 0.25rem;">
+                <button id="login-close-btn" style="background: none; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; text-decoration: underline;">Cancel Authorization</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Maps API static loader script -->
+    <script src="index.js"></script>
+</body>
+</html>
