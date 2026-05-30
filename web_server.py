@@ -177,6 +177,49 @@ def geocode_location_free(location_name):
         
     return None
 
+def send_smtp_email(to_email, subject, html_content):
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    
+    email_user = os.environ.get("EMAIL_USER", "").strip()
+    email_pass = os.environ.get("EMAIL_PASS", "").strip()
+    admin_email = os.environ.get("ADMIN_EMAIL", "").strip()
+    
+    recipient = to_email if to_email else admin_email
+    if not recipient:
+        recipient = admin_email
+        
+    if not email_user or not email_pass:
+        print("⚠️ [SMTP Server] EMAIL_USER or EMAIL_PASS not set in environment. Skipping physical SMTP email dispatch.")
+        return False
+        
+    print(f"📧 [SMTP Server] Preparing to dispatch real physical email warning to {recipient}...")
+    try:
+        smtp_server = "smtp.gmail.com"
+        port = 587
+        
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = email_user
+        msg['To'] = recipient
+        
+        part = MIMEText(html_content, 'html')
+        msg.attach(part)
+        
+        server = smtplib.SMTP(smtp_server, port, timeout=10)
+        server.starttls()
+        server.login(email_user, email_pass)
+        server.sendmail(email_user, recipient, msg.as_string())
+        server.quit()
+        
+        print(f"✅ [SMTP Server] Successfully dispatched real physical email warning to {recipient}!")
+        return True
+    except Exception as e:
+        print(f"❌ [SMTP Server] Failed to dispatch physical SMTP email: {e}")
+        return False
+
+
 
 class CrisisDashboardHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -429,6 +472,13 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
             self.send_cors_headers('application/json')
             try:
                 data = json.loads(post_data)
+                
+                # Dispatch real SMTP email warning in a background daemon thread to avoid blocking the HTTP response
+                import threading
+                to_email = data.get("to", "")
+                subject = data.get("message", {}).get("subject", "AEGIS Warning Alert")
+                html_content = data.get("message", {}).get("html", "")
+                threading.Thread(target=send_smtp_email, args=(to_email, subject, html_content), daemon=True).start()
                 
                 if mongodb_client:
                     success = mongodb_client.log_mail_warning(data)
