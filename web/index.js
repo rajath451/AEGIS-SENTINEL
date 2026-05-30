@@ -299,86 +299,147 @@ function setupEventListeners() {
             state.selectedCountry = country;
             
             if (country === "local") {
+                const handleGeoSuccess = (lat, lng, sourceLabel) => {
+                    state.userLat = lat;
+                    state.userLng = lng;
+                    
+                    // Save geolocated coordinates persistently to local cache and secure MongoDB database!
+                    localStorage.setItem('aegis_last_localized_coords', JSON.stringify({ lat, lng }));
+                    
+                    const operator = getLoggedInUser() || state.currentUser;
+                    if (operator) {
+                        fetch('/api/operator/localize', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: operator, lat, lng })
+                        })
+                        .then(res => res.json())
+                        .then(resData => {
+                            if (resData.status === "success") {
+                                logToConsole(`🔥 [MongoDB] Successfully synchronized localization coordinates to operators collection.`, "success");
+                            }
+                        })
+                        .catch(err => {
+                            console.warn("Failed to sync coordinates to MongoDB", err);
+                        });
+                    }
+
+                    logToConsole(`📍 Geolocation locked (${sourceLabel}): ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "success");
+                    
+                    // Center Leaflet map and plot pulsing user location marker
+                    if (state.map) {
+                        state.map.setView([lat, lng], 13);
+                        setTimeout(() => {
+                            state.map.invalidateSize();
+                        }, 250);
+                        
+                        if (state.userLocationMarker) {
+                            state.map.removeLayer(state.userLocationMarker);
+                        }
+                        
+                        const userIcon = L.divIcon({
+                            className: 'custom-leaflet-marker',
+                            html: `
+                                <div class="marker-pulse-ring" style="border: 2px solid #3b82f6; box-shadow: 0 0 10px #3b82f6;"></div>
+                                <div class="marker-pin-inner" style="background-color: #3b82f6;"></div>
+                            `,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16]
+                        });
+                        state.userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(state.map);
+                        state.userLocationMarker.bindPopup("<b>📍 Your Current Location</b><br>Secured sensory dispatch node.");
+                    }
+                    
+                    // Reverse geocode to city name using free Nominatim reverse lookup
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+                        .then(res => res.json())
+                        .then(geoData => {
+                            const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.suburb || "Local Sector";
+                            const query = `critical hazards storm warnings in ${city}`;
+                            dom.serpQueryInput.value = query;
+                            logToConsole(`📍 Reverse-geocoded local area: ${city}. Auto-populating query: "${query}"`, "success");
+                            logToConsole("⚡ Triggering local crisis analysis report automatically...", "info");
+                            triggerPipelineRun();
+                        })
+                        .catch(err => {
+                            const query = `disasters storm warnings near ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+                            dom.serpQueryInput.value = query;
+                            logToConsole("⚡ Triggering local crisis analysis report automatically...", "info");
+                            triggerPipelineRun();
+                        });
+                };
+
+                const tryFallbackGeo = () => {
+                    // Step 2.1: Check localStorage
+                    const storedCoords = localStorage.getItem('aegis_last_localized_coords');
+                    if (storedCoords) {
+                        try {
+                            const { lat, lng } = JSON.parse(storedCoords);
+                            logToConsole("📍 GPS unavailable. Restoring coordinates from local operator cache...", "info");
+                            handleGeoSuccess(lat, lng, "Local Storage Cache");
+                            return;
+                        } catch (e) {}
+                    }
+                    
+                    // Step 2.2: Check active memory states
+                    if (state.userLat !== null && state.userLng !== null) {
+                        logToConsole("📍 GPS unavailable. Restoring active session coordinates...", "info");
+                        handleGeoSuccess(state.userLat, state.userLng, "Active Session State");
+                        return;
+                    }
+                    
+                    // Step 2.3: Attempt high-reliability free IP Geolocation lookup
+                    logToConsole("⚡ Contacting free cellular/IP location resolution service...", "info");
+                    fetch('https://ipapi.co/json/')
+                        .then(res => res.json())
+                        .then(ipData => {
+                            if (ipData && ipData.latitude && ipData.longitude) {
+                                const lat = parseFloat(ipData.latitude);
+                                const lng = parseFloat(ipData.longitude);
+                                const city = ipData.city || "Local Sector";
+                                handleGeoSuccess(lat, lng, `IP Geolocation: ${city}`);
+                            } else {
+                                throw new Error("Invalid payload response from IP service");
+                            }
+                        })
+                        .catch(ipErr => {
+                            // Step 2.4: Default fallback to Mangaluru local sector
+                            logToConsole("⚠️ Geolocation networks unresolvable. Applying secure default sector (Mangaluru, India).", "warning");
+                            const defaultLat = 12.9141;
+                            const defaultLng = 74.8560;
+                            handleGeoSuccess(defaultLat, defaultLng, "Default Local Coordinates");
+                        });
+                };
+
                 logToConsole("📍 Requesting exact device geolocation authorization...", "info");
                 if (!navigator.geolocation) {
-                    logToConsole("❌ Browser Geolocation is not supported on this platform.", "error");
+                    logToConsole("❌ Browser Geolocation is not supported on this platform. Checking alternate systems...", "warning");
+                    tryFallbackGeo();
                     return;
                 }
                 
+                // Attempt 1: High-Accuracy GPS
+                logToConsole("📍 Pinging mobile high-accuracy satellite GPS...", "info");
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        state.userLat = lat;
-                        state.userLng = lng;
-                        
-                        // Save geolocated coordinates persistently to local cache and secure MongoDB database!
-                        localStorage.setItem('aegis_last_localized_coords', JSON.stringify({ lat, lng }));
-                        
-                        const operator = getLoggedInUser() || state.currentUser;
-                        if (operator) {
-                            fetch('/api/operator/localize', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ email: operator, lat, lng })
-                            })
-                            .then(res => res.json())
-                            .then(resData => {
-                                if (resData.status === "success") {
-                                    logToConsole(`🔥 [MongoDB] Successfully synchronized localization coordinates to secure database.`, "success");
-                                }
-                            })
-                            .catch(err => {
-                                console.warn("Failed to sync coordinates to MongoDB", err);
-                            });
-                        }
-
-                        
-                        logToConsole(`📍 Geolocation locked: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "success");
-                        
-                        // Center Leaflet map and plot pulsing user location marker
-                        if (state.map) {
-                            state.map.setView([lat, lng], 13);
-                            
-                            if (state.userLocationMarker) {
-                                state.map.removeLayer(state.userLocationMarker);
-                            }
-                            
-                            const userIcon = L.divIcon({
-                                className: 'custom-leaflet-marker',
-                                html: `
-                                    <div class="marker-pulse-ring" style="border: 2px solid #3b82f6; box-shadow: 0 0 10px #3b82f6;"></div>
-                                    <div class="marker-pin-inner" style="background-color: #3b82f6;"></div>
-                                `,
-                                iconSize: [32, 32],
-                                iconAnchor: [16, 16]
-                            });
-                            state.userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(state.map);
-                            state.userLocationMarker.bindPopup("<b>📍 Your Current Location</b><br>Secured sensory dispatch node.");
-                        }
-                        
-                        // Reverse geocode to city name using free Nominatim reverse lookup
-                        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-                            .then(res => res.json())
-                            .then(geoData => {
-                                const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.suburb || "Local Sector";
-                                const query = `critical hazards storm warnings in ${city}`;
-                                dom.serpQueryInput.value = query;
-                                logToConsole(`📍 Reverse-geocoded local area: ${city}. Auto-populating query: "${query}"`, "success");
-                                logToConsole("⚡ Triggering local crisis analysis report automatically...", "info");
-                                triggerPipelineRun();
-                            })
-                            .catch(err => {
-                                const query = `disasters storm warnings near ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
-                                dom.serpQueryInput.value = query;
-                                logToConsole("⚡ Triggering local crisis analysis report automatically...", "info");
-                                triggerPipelineRun();
-                            });
+                        handleGeoSuccess(position.coords.latitude, position.coords.longitude, "High-Accuracy GPS");
                     },
                     (err) => {
-                        logToConsole(`⚠️ Geolocation request denied or timed out: ${err.message}`, "warning");
+                        logToConsole(`⚠️ GPS request timed out or unavailable (${err.message}). Retrying with coarse network location...`, "warning");
+                        
+                        // Attempt 2: Coarse cellular/network triangulation
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                handleGeoSuccess(pos.coords.latitude, pos.coords.longitude, "Coarse Network");
+                            },
+                            (lowErr) => {
+                                logToConsole(`❌ Network-based location failed (${lowErr.message}). Engaging secondary fallback channels...`, "error");
+                                tryFallbackGeo();
+                            },
+                            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+                        );
                     },
-                    { enableHighAccuracy: true, timeout: 8000 }
+                    { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
                 );
                 
                 return;
@@ -395,6 +456,7 @@ function setupEventListeners() {
             
             // Fly map center to show correct scale and country automatically
             if (state.map) {
+                state.map.invalidateSize();
                 if (country === "india") state.map.setView([22.9734, 78.6569], 5);
                 else if (country === "japan") state.map.setView([36.2048, 138.2529], 5);
                 else if (country === "usa") state.map.setView([37.0902, -95.7129], 4);
@@ -1243,6 +1305,13 @@ function initLeafletMap() {
                     marker.classList.remove('zoomed-out');
                 }
             });
+        });
+
+        // Register window resize listener for robust mobile viewport changes and rotation
+        window.addEventListener('resize', () => {
+            if (state.map) {
+                state.map.invalidateSize();
+            }
         });
         
         logToConsole("✅ Free Leaflet Dark Mapping Module successfully activated.", "success");
