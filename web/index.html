@@ -1065,18 +1065,20 @@
         </div>
     </div>
 
-    <!-- Firebase SDK Compat Core and Firestore libraries -->
+    <!-- Firebase SDK Compat Core, Firestore, and Analytics libraries -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
     <script>
-      // Sandboxed default configuration for instant developer integration
+      // Active Live Web App's Firebase configuration
       const firebaseConfig = {
         apiKey: "AIzaSyFakeKeyAEGIS-SentinelHUD2026",
-        authDomain: "aegis-sentinel-hud.firebaseapp.com",
-        projectId: "aegis-sentinel-hud",
-        storageBucket: "aegis-sentinel-hud.appspot.com",
-        messagingSenderId: "99827361546",
-        appId: "1:99827361546:web:aegis0928371298"
+        authDomain: "egis-sentinel-hud.firebaseapp.com",
+        projectId: "egis-sentinel-hud",
+        storageBucket: "egis-sentinel-hud.firebasestorage.app",
+        messagingSenderId: "862993360257",
+        appId: "1:862993360257:web:a9a52e93744afb221af480",
+        measurementId: "G-QR12879F0Q"
       };
       
       try {
@@ -1084,7 +1086,10 @@
         if (typeof firebase !== 'undefined') {
             firebase.initializeApp(firebaseConfig);
             window.db = firebase.firestore();
-            console.log("🔥 Firebase Firestore compatible client initialized.");
+            if (typeof firebase.analytics === 'function') {
+                firebase.analytics();
+            }
+            console.log("🔥 Production Firebase Client & Analytics initialized.");
         }
       } catch (e) {
         console.warn("⚠️ Firebase scripts loaded but initialization was bypassed: " + e.message);
