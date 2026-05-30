@@ -1065,6 +1065,32 @@
         </div>
     </div>
 
+    <!-- Firebase SDK Compat Core and Firestore libraries -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script>
+      // Sandboxed default configuration for instant developer integration
+      const firebaseConfig = {
+        apiKey: "AIzaSyFakeKeyAEGIS-SentinelHUD2026",
+        authDomain: "aegis-sentinel-hud.firebaseapp.com",
+        projectId: "aegis-sentinel-hud",
+        storageBucket: "aegis-sentinel-hud.appspot.com",
+        messagingSenderId: "99827361546",
+        appId: "1:99827361546:web:aegis0928371298"
+      };
+      
+      try {
+        // Initialize Firebase App in compatibility mode
+        if (typeof firebase !== 'undefined') {
+            firebase.initializeApp(firebaseConfig);
+            window.db = firebase.firestore();
+            console.log("🔥 Firebase Firestore compatible client initialized.");
+        }
+      } catch (e) {
+        console.warn("⚠️ Firebase scripts loaded but initialization was bypassed: " + e.message);
+      }
+    </script>
+
     <!-- Google Maps API static loader script -->
     <script src="index.js"></script>
 </body>

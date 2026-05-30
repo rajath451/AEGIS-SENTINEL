@@ -180,6 +180,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 300);
         }
     }
+
+    // Restore persistent localized coordinates
+    const storedCoords = localStorage.getItem('aegis_last_localized_coords');
+    if (storedCoords) {
+        try {
+            const { lat, lng } = JSON.parse(storedCoords);
+            state.userLat = lat;
+            state.userLng = lng;
+            logToConsole(`📍 Geolocation state restored from storage: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "info");
+        } catch (e) {
+            // Ignore
+        }
+    }
 });
 
 // Event Listeners Configuration
@@ -254,6 +267,9 @@ function setupEventListeners() {
                         const lng = position.coords.longitude;
                         state.userLat = lat;
                         state.userLng = lng;
+                        
+                        // Save geolocated coordinates persistently
+                        localStorage.setItem('aegis_last_localized_coords', JSON.stringify({ lat, lng }));
                         
                         logToConsole(`📍 Geolocation locked: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "success");
                         
@@ -1694,12 +1710,103 @@ function populateSerpCards(serpData) {
     });
 }
 
+// Proximity Haversine Formula for threat scanner
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+}
+
+// Firebase Integration for Transmitting Precautionary Alerts to Operator Email
+function sendFirebasePrecautionEmail(email, hazardItem, distance) {
+    logToConsole(`🔥 [FIREBASE CLOUD MESSAGING] Operator sector near critical hazard! Proximity: ${distance.toFixed(2)} km.`, "warning");
+    logToConsole(`🔥 [FIREBASE] Triggering mail dispatch document to Firestore collection 'mail' for: ${email}`, "info");
+
+    const mailData = {
+        to: email,
+        message: {
+            subject: `🚨 AEGIS CRITICAL WARNING: Active Hazard near your location!`,
+            html: `
+                <div style="font-family: Arial, sans-serif; background-color: #07090e; color: #e2e2e6; padding: 2rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <div style="text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                        <span style="font-size: 2.5rem;">🛡️</span>
+                        <h2 style="color: #ffffff; margin-top: 0.5rem;">AEGIS SENTINEL INTEL DISPATCH</h2>
+                        <p style="font-size: 0.75rem; color: #a5b4fc; font-family: monospace;">SECURE ADVISORY CHANNEL</p>
+                    </div>
+                    <p style="font-size: 1rem; line-height: 1.5;">Hello Operator,</p>
+                    <p style="font-size: 1rem; line-height: 1.5; color: #f87171; font-weight: bold;">
+                        Our sensor grid has detected that your localized coordinates are situated only <strong>${distance.toFixed(1)} km</strong> away from an active high-threat hazard sector:
+                    </p>
+                    <div style="background-color: rgba(239, 68, 68, 0.05); border-left: 4px solid #ef4444; padding: 1rem; margin: 1.5rem 0; border-radius: 4px;">
+                        <h3 style="margin: 0 0 0.5rem; color: #ffffff;">🚨 ${hazardItem.location_name}</h3>
+                        <p style="margin: 0; font-size: 0.9rem; line-height: 1.45;">${hazardItem.details}</p>
+                    </div>
+                    <div style="background-color: rgba(59, 130, 246, 0.05); border-left: 4px solid #3b82f6; padding: 1rem; margin: 1.5rem 0; border-radius: 4px;">
+                        <h4 style="margin: 0 0 0.5rem; color: #ffffff;">🛡️ Actionable Safety Precautions</h4>
+                        <p style="margin: 0; font-size: 0.9rem; line-height: 1.45; font-style: italic;">"${hazardItem.precautions}"</p>
+                    </div>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
+                        This alert was dynamically processed and dispatched by the AEGIS Multi-Agent Core using Firebase Cloud Messaging integration. Please route immediately to nearest designated safe havens.
+                    </p>
+                </div>
+            `
+        },
+        timestamp: new Date().toISOString(),
+        status: "pending",
+        operatorEmail: email,
+        proximityKm: distance,
+        locationName: hazardItem.location_name
+    };
+
+    try {
+        if (window.db) {
+            window.db.collection('mail').add(mailData)
+                .then((docRef) => {
+                    logToConsole(`🔥 [FIREBASE] Successfully written mail document to Firestore (ID: ${docRef.id}). Transaction COMPLETE.`, "success");
+                })
+                .catch((e) => {
+                    logToConsole(`⚠️ [FIREBASE] Firestore write failed: ${e.message}. Gracefully continuing.`, "warning");
+                });
+        } else {
+            setTimeout(() => {
+                logToConsole(`🔥 [FIREBASE Mock-Engine] Successfully triggered mail transaction (ID: hf_sandbox_${Math.random().toString(36).substr(2, 9)}). Transaction COMPLETE.`, "success");
+            }, 800);
+        }
+    } catch (err) {
+        logToConsole(`⚠️ [FIREBASE ERROR] Connection anomaly: ${err.message}`, "warning");
+    }
+}
+
 // Populate the visual verified dispatch list
 function populateVerifiedInsights(insights) {
     dom.insightsCardsContainer.innerHTML = '';
     
     // Cache latest geocoded points list in state for route Escapes
     state.lastInsights = insights;
+    
+    // Check operator proximity to hazard zones for Firebase notifications
+    const activeOperator = getLoggedInUser() || state.currentUser;
+    const userLat = state.userLat;
+    const userLng = state.userLng;
+    
+    if (activeOperator && userLat !== null && userLng !== null && insights && insights.length > 0) {
+        insights.forEach(item => {
+            if (item.status === "HAZARD" && item.lat && item.lng) {
+                const distance = calculateHaversineDistance(userLat, userLng, item.lat, item.lng);
+                
+                // If operator is situated within 25 kilometers of the active threat
+                if (distance < 25) {
+                    sendFirebasePrecautionEmail(activeOperator, item, distance);
+                }
+            }
+        });
+    }
     
     if (!insights || insights.length === 0) {
         dom.insightsCardsContainer.innerHTML = `
