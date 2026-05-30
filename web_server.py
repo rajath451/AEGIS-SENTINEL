@@ -696,7 +696,8 @@ def run_server(port=8000):
     socketserver.TCPServer.allow_reuse_address = True
     
     # Try booting on target port, fallback to scanning if unavailable
-    while port < 8080:
+    max_port = port + 80
+    while port < max_port:
         try:
             with socketserver.TCPServer(("", port), handler) as httpd:
                 print(f"\n=======================================================")
