@@ -63,6 +63,7 @@ import urllib.request
 import urllib.parse
 
 def geocode_location_free(location_name):
+    # Attempt 1: Free Nominatim OpenStreetMap Geocoding
     try:
         url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&limit=1"
         req = urllib.request.Request(
@@ -77,6 +78,28 @@ def geocode_location_free(location_name):
                 return lat, lng
     except Exception as e:
         print(f"OSM Nominatim Geocoding failed for {location_name}: {e}")
+        
+    # Attempt 2: GeoDB Cities API Integration Fallback
+    try:
+        search_url = f"http://geodb-free-service.wirefreethought.com/v1/geo/cities?namePrefix={urllib.parse.quote(location_name)}&limit=1"
+        req = urllib.request.Request(
+            search_url,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "AegisSentinelTerminal/1.0"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            if res_data and "data" in res_data and len(res_data["data"]) > 0:
+                city_node = res_data["data"][0]
+                lat = float(city_node.get("latitude"))
+                lng = float(city_node.get("longitude"))
+                print(f"✅ [GeoDB Cities API] Successfully geocoded {location_name} -> {lat}, {lng}")
+                return lat, lng
+    except Exception as geo_e:
+        print(f"GeoDB Geocoding failed for {location_name}: {geo_e}")
+        
     return None
 
 class CrisisDashboardHandler(BaseHTTPRequestHandler):
