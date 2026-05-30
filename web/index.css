@@ -248,7 +248,7 @@ body {
     flex-direction: column;
     gap: 1.25rem;
     max-height: 90vh;
-    overflow-y: auto;
+    overflow-y: auto !important;
 }
 
 .settings-content h3 {
@@ -510,9 +510,9 @@ body {
 }
 
 .styled-input {
-    background: rgba(0,0,0,0.3);
-    border: 1px solid var(--card-border);
-    color: var(--text-primary);
+    background: #0b0f19 !important;
+    border: 1px solid var(--card-border) !important;
+    color: #ffffff !important;
     padding: 0.75rem;
     border-radius: var(--border-radius-md);
     font-family: var(--font-main);

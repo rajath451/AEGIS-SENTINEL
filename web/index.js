@@ -4,6 +4,8 @@
 
 // App State Cache
 const state = {
+    currentUser: null,
+    authMode: 'login',
     isSimulated: true,
     isRunning: false,
     audioSource: 'radio', // 'radio' or 'mic'
@@ -88,6 +90,60 @@ const dom = {
     googleMapTarget: document.getElementById('google-map-target')
 };
 
+// Local Storage Authentication Databases & Helper Operations
+function getRegisteredUsers() {
+    try {
+        const users = localStorage.getItem('aegis_users');
+        return users ? JSON.parse(users) : { "operator@aegis.secure": "1234" }; // Default credentials matching original passcode
+    } catch (e) {
+        return { "operator@aegis.secure": "1234" };
+    }
+}
+
+function saveRegisteredUsers(users) {
+    try {
+        localStorage.setItem('aegis_users', JSON.stringify(users));
+    } catch (e) {
+        console.error("Failed to persist users", e);
+    }
+}
+
+function getLoggedInUser() {
+    return localStorage.getItem('aegis_logged_in_user');
+}
+
+function setLoggedInUser(email) {
+    localStorage.setItem('aegis_logged_in_user', email);
+}
+
+function clearLoggedInUser() {
+    localStorage.removeItem('aegis_logged_in_user');
+}
+
+function updateOperatorProfileUI(email) {
+    if (!email) return;
+    const namePart = email.split('@')[0].toUpperCase();
+    
+    // Update Header Profile Chip
+    const chipName = document.getElementById('operator-chip-name');
+    if (chipName) chipName.textContent = namePart;
+    
+    // Update Settings Modal profile strings
+    const profileEmail = document.getElementById('operator-profile-email');
+    const profileRole = document.getElementById('operator-profile-role');
+    if (profileEmail) profileEmail.textContent = email;
+    if (profileRole) {
+        const grade = (email.length % 3) + 1;
+        profileRole.textContent = `AUTHORIZED OPERATOR • CLASS-${grade}`;
+    }
+    
+    // Update HUD Agent ID text value dynamically if element exists
+    const agentIdVal = document.querySelector('#landing-main-hud .flex.gap-4 .hud-border:nth-child(2) .text-2xl');
+    if (agentIdVal) {
+        agentIdVal.textContent = namePart.slice(0, 8);
+    }
+}
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
@@ -103,6 +159,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize premium AEGIS telemetry widget and alerts carousel
     syncTelemetryWidget("Mangaluru");
     startCarouselSlider();
+
+    // Auto-Login Check on Load
+    const savedUser = getLoggedInUser();
+    if (savedUser) {
+        state.currentUser = savedUser;
+        updateOperatorProfileUI(savedUser);
+        
+        const landingPage = document.getElementById('landing-page-container');
+        const dashboard = document.getElementById('dashboard-container');
+        if (landingPage) landingPage.style.display = 'none';
+        if (dashboard) dashboard.classList.remove('hidden');
+        
+        logToConsole(`🔑 Auto-Login: Restored active session for operator: ${savedUser}`, "success");
+        
+        // Force Leaflet map viewport recalculation
+        if (state.map) {
+            setTimeout(() => {
+                state.map.invalidateSize();
+            }, 300);
+        }
+    }
 });
 
 // Event Listeners Configuration
@@ -648,6 +725,40 @@ function setupEventListeners() {
             loginModal.classList.add('hidden');
         });
     }
+
+    // Toggle Login vs Sign Up Mode
+    const toggleModeBtn = document.getElementById('login-toggle-mode-btn');
+    if (toggleModeBtn) {
+        toggleModeBtn.addEventListener('click', (e) => {
+            if (e) e.preventDefault();
+            const title = document.getElementById('login-modal-title');
+            const subtitle = document.getElementById('login-modal-subtitle');
+            const btnText = document.getElementById('login-btn-text');
+            const toggleText = document.getElementById('login-toggle-text');
+            const passLabel = document.getElementById('login-password-label');
+            const errEl = document.getElementById('login-error-msg');
+            
+            if (errEl) errEl.style.display = 'none';
+
+            if (state.authMode === 'login') {
+                state.authMode = 'signup';
+                if (title) title.textContent = "REGISTER OPERATOR";
+                if (subtitle) subtitle.textContent = "ESTABLISH AEGIS SECURITY PROFILE";
+                if (passLabel) passLabel.textContent = "CHOOSE SECURE PASSWORD";
+                if (btnText) btnText.textContent = "ESTABLISH PROFILE";
+                if (toggleText) toggleText.textContent = "Already registered?";
+                if (toggleModeBtn) toggleModeBtn.textContent = "Log In";
+            } else {
+                state.authMode = 'login';
+                if (title) title.textContent = "OPERATOR LOGIN";
+                if (subtitle) subtitle.textContent = "AEGIS SENTINEL SECURE ACCESS";
+                if (passLabel) passLabel.textContent = "SECURE PASSWORD";
+                if (btnText) btnText.textContent = "AUTHORIZE ACCESS";
+                if (toggleText) toggleText.textContent = "Don't have an operator profile?";
+                if (toggleModeBtn) toggleModeBtn.textContent = "Sign Up";
+            }
+        });
+    }
     
     // Authorize & Boot Terminal Ingest Trigger
     const authorizeBtn = document.getElementById('login-authorize-btn');
@@ -655,19 +766,67 @@ function setupEventListeners() {
         authorizeBtn.addEventListener('click', async (e) => {
             if (e) e.preventDefault();
             
-            const operatorInput = document.getElementById('login-operator-id');
-            const passcodeInput = document.getElementById('login-passcode');
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
             const errEl = document.getElementById('login-error-msg');
             const btnText = authorizeBtn.querySelector('.btn-text');
             
-            const opVal = operatorInput ? operatorInput.value.trim() : "";
-            const passVal = passcodeInput ? passcodeInput.value.trim() : "";
+            const emailVal = emailInput ? emailInput.value.trim() : "";
+            const passVal = passwordInput ? passwordInput.value.trim() : "";
             
-            // Simple validation: secure passcode '1234'
-            if (passVal !== "1234") {
-                if (errEl) errEl.style.display = 'block';
-                logToConsole("⚠️ Security system denied operator access: invalid credentials.", "error");
+            if (!emailVal || !passVal) {
+                if (errEl) {
+                    errEl.textContent = "⚠️ Validation Error: Email and Password are required.";
+                    errEl.style.display = 'block';
+                }
                 return;
+            }
+            
+            // Simple email validation regex
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailVal)) {
+                if (errEl) {
+                    errEl.textContent = "⚠️ Validation Error: Please enter a valid email address.";
+                    errEl.style.display = 'block';
+                }
+                return;
+            }
+
+            const users = getRegisteredUsers();
+
+            if (state.authMode === 'signup') {
+                // Sign Up flow
+                if (users[emailVal.toLowerCase()]) {
+                    if (errEl) {
+                        errEl.textContent = "⚠️ Registration Error: Email is already registered.";
+                        errEl.style.display = 'block';
+                    }
+                    return;
+                }
+                
+                if (passVal.length < 4) {
+                    if (errEl) {
+                        errEl.textContent = "⚠️ Registration Error: Password must be at least 4 characters.";
+                        errEl.style.display = 'block';
+                    }
+                    return;
+                }
+                
+                // Save user credentials
+                users[emailVal.toLowerCase()] = passVal;
+                saveRegisteredUsers(users);
+                logToConsole(`📝 Registered new operator: ${emailVal}`, "success");
+            } else {
+                // Log In flow
+                const registeredPass = users[emailVal.toLowerCase()];
+                if (!registeredPass || registeredPass !== passVal) {
+                    if (errEl) {
+                        errEl.textContent = "⚠️ Security Error: Invalid email or password.";
+                        errEl.style.display = 'block';
+                    }
+                    logToConsole("⚠️ Security system denied operator access: invalid credentials.", "error");
+                    return;
+                }
             }
             
             // Success: Play visual loading boot sequence
@@ -677,6 +836,13 @@ function setupEventListeners() {
             
             await sleep(1200); // 1.2s loading sweep
             
+            // Establish logged-in state
+            state.currentUser = emailVal;
+            setLoggedInUser(emailVal);
+            
+            // Update HUD UI with profile details
+            updateOperatorProfileUI(emailVal);
+
             // Transition and play walkie-talkie start chirps
             loginModal.classList.add('hidden');
             const landingPage = document.getElementById('landing-page-container');
@@ -696,12 +862,50 @@ function setupEventListeners() {
             // Play radio transmit beep automatically on operator initialization!
             playRadioBeep(true);
             
-            logToConsole(`🔑 Operator ${opVal || "AEGIS-01"} successfully verified. Booting terminal coordination HUD...`, "success");
+            logToConsole(`🔑 Operator ${emailVal} successfully verified. Booting terminal coordination HUD...`, "success");
             logToConsole("📡 Real-time crisis telemetry stream active and geocoded.", "info");
             
-            // Reset button text
+            // Reset button text & inputs
             if (btnText) btnText.textContent = "AUTHORIZE ACCESS";
             authorizeBtn.classList.remove('loading');
+            if (emailInput) emailInput.value = "";
+            if (passwordInput) passwordInput.value = "";
+        });
+    }
+
+    // Settings Top-Right "✕" Close Button Trigger
+    const settingsCloseX = document.getElementById('settings-close-x');
+    const settingsPanel = document.getElementById('settings-panel');
+    if (settingsCloseX && settingsPanel) {
+        settingsCloseX.addEventListener('click', () => {
+            settingsPanel.classList.add('hidden');
+        });
+    }
+
+    // Operator Log Out Trigger
+    const logoutBtn = document.getElementById('operator-logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            if (e) e.preventDefault();
+            
+            // Flush the active user session
+            state.currentUser = null;
+            clearLoggedInUser();
+            
+            logToConsole("🔓 Operator session logged out. Re-engaging security firewalls.", "warning");
+            
+            // Close Settings Panel and hide Dashboard
+            if (settingsPanel) settingsPanel.classList.add('hidden');
+            
+            const dashboard = document.getElementById('dashboard-container');
+            if (dashboard) dashboard.classList.add('hidden');
+            
+            // Show Landing Page
+            const landingPage = document.getElementById('landing-page-container');
+            if (landingPage) landingPage.style.display = 'block';
+            
+            // Play Walkie-Talkie disconnect squelch
+            playRadioBeep(false);
         });
     }
     
