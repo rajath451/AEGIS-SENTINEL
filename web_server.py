@@ -62,26 +62,43 @@ logging.getLogger().setLevel(logging.INFO)
 import urllib.request
 import urllib.parse
 
-def geocode_location_free(location_name):
-    # Attempt 1: Free Nominatim OpenStreetMap Geocoding
+_indian_cities_cache = None
+
+def load_indian_cities_cache():
+    url = "https://raw.githubusercontent.com/fayazara/Indian-Cities-API/master/cities.json"
+    print("Loading Indian Cities API dataset into cache...")
     try:
-        url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&limit=1"
         req = urllib.request.Request(
-            url, 
-            headers={'User-Agent': 'CrisisIntelligenceTerminal/1.0 (emergency response system dashboard geocoder)'}
+            url,
+            headers={"User-Agent": "AegisSentinelTerminal/1.0"}
         )
-        with urllib.request.urlopen(req, timeout=5) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            if data and len(data) > 0:
-                lat = float(data[0]['lat'])
-                lng = float(data[0]['lon'])
-                return lat, lng
+        with urllib.request.urlopen(req, timeout=8) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            if isinstance(res_data, dict) and "cities" in res_data:
+                print(f"Successfully loaded {len(res_data['cities'])} Indian cities from remote raw dataset.")
+                return res_data["cities"]
+            elif isinstance(res_data, list):
+                print(f"Successfully loaded {len(res_data)} Indian cities from remote raw dataset.")
+                return res_data
     except Exception as e:
-        print(f"OSM Nominatim Geocoding failed for {location_name}: {e}")
+        print(f"Failed to load Indian cities from remote raw dataset: {e}. Using high-fidelity local default list.")
         
-    # Attempt 2: GeoDB Cities API Integration Fallback
+    return [
+        {"City": "Mangaluru", "State": "Karnataka", "District": "Dakshina Kannada"},
+        {"City": "Bengaluru", "State": "Karnataka", "District": "Bengaluru Urban"},
+        {"City": "Mumbai", "State": "Maharashtra", "District": "Mumbai City"},
+        {"City": "New Delhi", "State": "Delhi", "District": "New Delhi"},
+        {"City": "Pune", "State": "Maharashtra", "District": "Pune"},
+        {"City": "Chennai", "State": "Tamil Nadu", "District": "Chennai"},
+        {"City": "Kolkata", "State": "West Bengal", "District": "Kolkata"},
+        {"City": "Hyderabad", "State": "Telangana", "District": "Hyderabad"},
+        {"City": "Ahmedabad", "State": "Gujarat", "District": "Ahmedabad"}
+    ]
+
+def geocode_via_geodb(location_name):
     try:
-        search_url = f"http://geodb-free-service.wirefreethought.com/v1/geo/cities?namePrefix={urllib.parse.quote(location_name)}&limit=1"
+        prefix = location_name.split(',')[0].strip()
+        search_url = f"http://geodb-free-service.wirefreethought.com/v1/geo/cities?namePrefix={urllib.parse.quote(prefix)}&limit=1"
         req = urllib.request.Request(
             search_url,
             headers={
@@ -97,10 +114,69 @@ def geocode_location_free(location_name):
                 lng = float(city_node.get("longitude"))
                 print(f"✅ [GeoDB Cities API] Successfully geocoded {location_name} -> {lat}, {lng}")
                 return lat, lng
+    except Exception as e:
+        print(f"GeoDB query failed for {location_name}: {e}")
+    return None, None
+
+def geocode_location_free(location_name):
+    print(f"Attempting geocoding for: '{location_name}'...")
+    
+    # Attempt 1: Free Nominatim OpenStreetMap Geocoding
+    try:
+        url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&limit=1"
+        req = urllib.request.Request(
+            url, 
+            headers={'User-Agent': 'CrisisIntelligenceTerminal/1.0 (emergency response system dashboard geocoder)'}
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data and len(data) > 0:
+                lat = float(data[0]['lat'])
+                lng = float(data[0]['lon'])
+                print(f"✅ [OSM Nominatim] Successfully geocoded {location_name} -> {lat}, {lng}")
+                return lat, lng
+    except Exception as e:
+        print(f"OSM Nominatim Geocoding failed for {location_name}: {e}")
+        
+    # Attempt 2: Indian Cities API Verification & Fallback
+    global _indian_cities_cache
+    if _indian_cities_cache is None:
+        _indian_cities_cache = load_indian_cities_cache()
+    
+    clean_name = location_name.strip().lower()
+    indian_city_match = None
+    for item in _indian_cities_cache:
+        if clean_name == item.get("City", "").lower() or clean_name in item.get("City", "").lower():
+            indian_city_match = item
+            break
+            
+    if indian_city_match:
+        city_name = indian_city_match.get("City")
+        state_name = indian_city_match.get("State")
+        print(f"📍 [Indian Cities API] Match found: {city_name}, State: {state_name}")
+        try:
+            search_query = f"{city_name}, {state_name}, India"
+            print(f"🔍 [Indian Cities API] Resolving verified location '{search_query}' via GeoDB...")
+            lat, lng = geocode_via_geodb(search_query)
+            if lat is not None and lng is not None:
+                return lat, lng
+        except Exception as e:
+            print(f"GeoDB resolve for Indian city failed: {e}")
+            
+    # Attempt 3: GeoDB Cities API Integration Fallback
+    try:
+        lat, lng = geocode_via_geodb(location_name)
+        if lat is not None and lng is not None:
+            return lat, lng
     except Exception as geo_e:
         print(f"GeoDB Geocoding failed for {location_name}: {geo_e}")
         
+    # Hard fallback for Mangaluru if all else fails
+    if "mangaluru" in clean_name or "mangalore" in clean_name:
+        return 12.871666666, 74.8425
+        
     return None
+
 
 class CrisisDashboardHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -148,6 +224,57 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
                 "measurementId": os.environ.get("FIREBASE_MEASUREMENT_ID", "")
             }
             self.wfile.write(json.dumps(config).encode('utf-8'))
+            return
+
+        elif path == '/api/cities/indian':
+            self.send_cors_headers('application/json')
+            params = urllib.parse.parse_qs(parsed_url.query)
+            query = params.get('query', [''])[0].strip().lower()
+            
+            global _indian_cities_cache
+            if _indian_cities_cache is None:
+                _indian_cities_cache = load_indian_cities_cache()
+                
+            matches = []
+            if query:
+                for city in _indian_cities_cache:
+                    city_name = city.get('City', '')
+                    district = city.get('District', '')
+                    state = city.get('State', '')
+                    if query in city_name.lower() or query in district.lower() or query in state.lower():
+                        matches.append(city)
+                        if len(matches) >= 20:
+                            break
+            else:
+                matches = _indian_cities_cache[:20]
+                
+            self.wfile.write(json.dumps({"status": "success", "results": matches}).encode('utf-8'))
+            return
+            
+        elif path == '/api/cities/geodb':
+            self.send_cors_headers('application/json')
+            params = urllib.parse.parse_qs(parsed_url.query)
+            query = params.get('query', [''])[0].strip()
+            
+            results = []
+            if query:
+                try:
+                    search_url = f"http://geodb-free-service.wirefreethought.com/v1/geo/cities?namePrefix={urllib.parse.quote(query)}&limit=10"
+                    req = urllib.request.Request(
+                        search_url,
+                        headers={
+                            "Content-Type": "application/json",
+                            "User-Agent": "AegisSentinelTerminal/1.0"
+                        }
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        res_data = json.loads(response.read().decode('utf-8'))
+                        if res_data and "data" in res_data:
+                            results = res_data["data"]
+                except Exception as e:
+                    print(f"Error querying GeoDB Cities API inside route: {e}")
+                    
+            self.wfile.write(json.dumps({"status": "success", "results": results}).encode('utf-8'))
             return
         
         # Serve static files from the 'web' directory

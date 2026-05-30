@@ -1070,7 +1070,188 @@ function setupEventListeners() {
             playRadioBeep(false);
         });
     }
+
+    // --- CITY SEARCH & VERIFICATION HUB HANDLERS ---
+    const citySearchInput = document.getElementById('city-search-input');
+    const cityApiSource = document.getElementById('city-api-source');
+    const cityResultsContainer = document.getElementById('city-results-container');
     
+    if (citySearchInput && cityApiSource && cityResultsContainer) {
+        let debounceTimer;
+        
+        const fetchCities = () => {
+            const query = citySearchInput.value.trim();
+            const source = cityApiSource.value;
+            
+            if (query.length < 2) {
+                cityResultsContainer.innerHTML = '';
+                cityResultsContainer.style.display = 'none';
+                return;
+            }
+            
+            const endpoint = source === 'indian' ? `/api/cities/indian?query=${encodeURIComponent(query)}` : `/api/cities/geodb?query=${encodeURIComponent(query)}`;
+            
+            fetch(endpoint)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && data.results && data.results.length > 0) {
+                        cityResultsContainer.innerHTML = '';
+                        cityResultsContainer.style.display = 'block';
+                        
+                        data.results.forEach(city => {
+                            const div = document.createElement('div');
+                            div.className = 'city-result-item';
+                            div.style.padding = '0.35rem 0.5rem';
+                            div.style.cursor = 'pointer';
+                            div.style.borderBottom = '1px solid rgba(255, 255, 255, 0.05)';
+                            div.style.transition = 'background 0.2s';
+                            
+                            div.addEventListener('mouseenter', () => {
+                                div.style.background = 'rgba(59, 130, 246, 0.2)';
+                            });
+                            div.addEventListener('mouseleave', () => {
+                                div.style.background = 'transparent';
+                            });
+                            
+                            let displayName = '';
+                            let lat = null;
+                            let lng = null;
+                            
+                            if (source === 'indian') {
+                                const cityName = city.City || '';
+                                const district = city.District || '';
+                                const stateName = city.State || '';
+                                displayName = `🇮🇳 <b>${cityName}</b>, ${district} (${stateName})`;
+                                lat = null;
+                                lng = null;
+                            } else {
+                                const cityName = city.city || city.name || '';
+                                const region = city.region || '';
+                                const country = city.country || '';
+                                displayName = `🌐 <b>${cityName}</b>, ${region} (${country})`;
+                                lat = parseFloat(city.latitude);
+                                lng = parseFloat(city.longitude);
+                            }
+                            
+                            div.innerHTML = displayName;
+                            
+                            div.addEventListener('click', () => {
+                                const cityName = source === 'indian' ? city.City : (city.city || city.name);
+                                logToConsole(`🎯 Selected city: ${cityName} from ${source === 'indian' ? 'Indian Cities API' : 'GeoDB Cities API'}`, "info");
+                                
+                                const queryText = `critical hazards storm warnings in ${cityName}`;
+                                if (dom.serpQueryInput) {
+                                    dom.serpQueryInput.value = queryText;
+                                }
+                                
+                                cityResultsContainer.style.display = 'none';
+                                citySearchInput.value = cityName;
+                                
+                                if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
+                                    state.userLat = lat;
+                                    state.userLng = lng;
+                                    localStorage.setItem('aegis_last_localized_coords', JSON.stringify({ lat, lng }));
+                                    
+                                    logToConsole(`📍 Coordinate locking completed via GeoDB: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "success");
+                                    
+                                    if (state.map) {
+                                        state.map.setView([lat, lng], 13);
+                                        setTimeout(() => {
+                                            state.map.invalidateSize();
+                                        }, 250);
+                                        
+                                        if (state.userLocationMarker) {
+                                            state.map.removeLayer(state.userLocationMarker);
+                                        }
+                                        
+                                        const userIcon = L.divIcon({
+                                            className: 'custom-leaflet-marker',
+                                            html: `
+                                                <div class="marker-pulse-ring" style="border: 2px solid #10b981; box-shadow: 0 0 10px #10b981;"></div>
+                                                <div class="marker-pin-inner" style="background-color: #10b981;"></div>
+                                            `,
+                                            iconSize: [32, 32],
+                                            iconAnchor: [16, 16]
+                                        });
+                                        state.userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(state.map);
+                                        state.userLocationMarker.bindPopup(`<b>📍 ${cityName} Secured Rally Node</b><br>Coordinates resolved successfully.`);
+                                    }
+                                } else {
+                                    logToConsole(`🔍 Resolving coordinates for Indian City '${cityName}'...`, "info");
+                                    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName + ', ' + (city.State || 'India'))}&format=json&limit=1`)
+                                        .then(res => res.json())
+                                        .then(geoData => {
+                                            if (geoData && geoData.length > 0) {
+                                                const resolvedLat = parseFloat(geoData[0].lat);
+                                                const resolvedLng = parseFloat(geoData[0].lon);
+                                                
+                                                state.userLat = resolvedLat;
+                                                state.userLng = resolvedLng;
+                                                localStorage.setItem('aegis_last_localized_coords', JSON.stringify({ lat: resolvedLat, lng: resolvedLng }));
+                                                
+                                                logToConsole(`📍 Coordinate locking completed via OSM: ${resolvedLat.toFixed(4)}, ${resolvedLng.toFixed(4)}`, "success");
+                                                
+                                                if (state.map) {
+                                                    state.map.setView([resolvedLat, resolvedLng], 13);
+                                                    setTimeout(() => {
+                                                        state.map.invalidateSize();
+                                                    }, 250);
+                                                    
+                                                    if (state.userLocationMarker) {
+                                                        state.map.removeLayer(state.userLocationMarker);
+                                                    }
+                                                    
+                                                    const userIcon = L.divIcon({
+                                                        className: 'custom-leaflet-marker',
+                                                        html: `
+                                                            <div class="marker-pulse-ring" style="border: 2px solid #10b981; box-shadow: 0 0 10px #10b981;"></div>
+                                                            <div class="marker-pin-inner" style="background-color: #10b981;"></div>
+                                                        `,
+                                                        iconSize: [32, 32],
+                                                        iconAnchor: [16, 16]
+                                                    });
+                                                    state.userLocationMarker = L.marker([resolvedLat, resolvedLng], { icon: userIcon }).addTo(state.map);
+                                                    state.userLocationMarker.bindPopup(`<b>📍 ${cityName} Secured Rally Node</b><br>Coordinates resolved successfully.`);
+                                                }
+                                            } else {
+                                                logToConsole(`⚠️ Coordinate resolution failed for ${cityName}. Falling back to default center.`, "warning");
+                                            }
+                                        })
+                                        .catch(err => {
+                                            logToConsole(`⚠️ Failed to resolve coords for ${cityName}: ${err.message}`, "warning");
+                                        });
+                                }
+                            });
+                            
+                            cityResultsContainer.appendChild(div);
+                        });
+                    } else {
+                        cityResultsContainer.innerHTML = '<div style="padding: 0.5rem; color: var(--text-secondary);">No matches found</div>';
+                        cityResultsContainer.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching cities", err);
+                    cityResultsContainer.style.display = 'none';
+                });
+        };
+        
+        citySearchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(fetchCities, 300);
+        });
+        
+        cityApiSource.addEventListener('change', () => {
+            fetchCities();
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (e.target !== citySearchInput && e.target !== cityApiSource && e.target !== cityResultsContainer) {
+                cityResultsContainer.style.display = 'none';
+            }
+        });
+    }
+
     // Initialize initial binding
     bindLoginTriggers();
 }

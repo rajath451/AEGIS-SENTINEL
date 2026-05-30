@@ -674,6 +674,21 @@
             </div>
 
             <div class="control-widget">
+                <label class="widget-label">City Search & Verification Hub</label>
+                <div style="display: flex; gap: 0.4rem; margin-bottom: 0.4rem;">
+                    <input type="text" id="city-search-input" placeholder="Type city name (e.g. Mangaluru)..." class="styled-input" style="flex: 1; font-size: 0.75rem; padding: 0.4rem 0.6rem;">
+                    <select id="city-api-source" class="styled-input" style="width: auto; font-size: 0.75rem; padding: 0.4rem; cursor: pointer; background: #0f172a; color: var(--text-primary); border: 1px solid var(--card-border); border-radius: 4px;">
+                        <option value="indian">🇮🇳 Indian Cities</option>
+                        <option value="geodb">🌐 GeoDB Cities</option>
+                    </select>
+                </div>
+                <!-- Dynamic City Results Container -->
+                <div id="city-results-container" style="max-height: 120px; overflow-y: auto; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--card-border); border-radius: 4px; display: none; margin-top: 0.25rem; font-size: 0.75rem;">
+                    <!-- Appended dynamically -->
+                </div>
+            </div>
+
+            <div class="control-widget">
                 <label for="serp-query-input" class="widget-label">Bright Data SERP Query</label>
                 <input type="text" id="serp-query-input" value="active weather hazards storm warnings" class="styled-input">
             </div>
