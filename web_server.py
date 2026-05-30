@@ -408,7 +408,16 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
                     logger.info("🧠 [STEP 3] Analyzing custom speech data via Gemini...")
                     try:
                         insights_str = verify_and_extract_coordinates(audio_transcript, serp_data, search_query)
-                        insights_json = json.loads(insights_str)
+                        # Sanitize markdown fences from Gemini JSON string response
+                        json_str_clean = insights_str.strip()
+                        if json_str_clean.startswith("```"):
+                            lines = json_str_clean.split("\n")
+                            if lines[0].startswith("```"):
+                                lines = lines[1:]
+                            if lines[-1].strip() == "```":
+                                lines = lines[:-1]
+                            json_str_clean = "\n".join(lines).strip()
+                        insights_json = json.loads(json_str_clean)
                     except Exception as e:
                         logger.warning(f"⚠️ Live Gemini extraction failed: {e}. Falling back to dynamic search geocoding.")
                         coords = geocode_location_free(search_query)
@@ -769,7 +778,16 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
                 insights_str = verify_and_extract_coordinates(audio_transcript, serp_data, search_query)
                 
                 try:
-                    insights_json = json.loads(insights_str)
+                    # Sanitize markdown fences from Gemini JSON string response
+                    json_str_clean = insights_str.strip()
+                    if json_str_clean.startswith("```"):
+                        lines = json_str_clean.split("\n")
+                        if lines[0].startswith("```"):
+                            lines = lines[1:]
+                        if lines[-1].strip() == "```":
+                            lines = lines[:-1]
+                        json_str_clean = "\n".join(lines).strip()
+                    insights_json = json.loads(json_str_clean)
                     
                     # Fill coordinates only if missing from Gemini
                     for item in insights_json:
