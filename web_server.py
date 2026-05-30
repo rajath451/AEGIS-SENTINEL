@@ -81,7 +81,11 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path == '/api/latest':
+        # Extract purely the path component to ignore any query parameters (e.g. ?logs-container.)
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+
+        if path == '/api/latest':
             self.send_cors_headers('application/json')
             self.wfile.write(json.dumps(latest_run_data).encode('utf-8'))
             return
@@ -90,7 +94,6 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
         web_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web')
         
         # Default route to index.html
-        path = self.path
         if path == '/' or path == '':
             path = '/index.html'
             
@@ -153,7 +156,11 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
             self.send_error(404, f"File Not Found: {path}")
 
     def do_POST(self):
-        if self.path == '/api/upload-audio':
+        # Extract purely the path component to ignore any query parameters
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+
+        if path == '/api/upload-audio':
             content_length = int(self.headers.get('Content-Length', 0))
             audio_bytes = self.rfile.read(content_length)
             
@@ -172,7 +179,7 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode('utf-8'))
                 
-        elif self.path == '/api/run':
+        elif path == '/api/run':
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length).decode('utf-8')
             
