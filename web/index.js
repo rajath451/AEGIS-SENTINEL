@@ -2133,6 +2133,110 @@ function sendFirebasePrecautionEmail(email, hazardItem, distance) {
     });
 }
 
+// SOS Distress Siren Email Advisory Transmitter
+function sendSirenEmergencyEmail(email, hazards) {
+    if (!hazards || hazards.length === 0) {
+        logToConsole("ℹ[] No active hazards found on dashboard. Skipping SOS email.", "info");
+        return;
+    }
+    
+    logToConsole(`🚨 [SOS EMAIL DISPATCH] Initiating emergency advisory dispatch for: ${email}`, "warning");
+    
+    let hazardsHtml = '';
+    hazards.forEach((hazard, idx) => {
+        hazardsHtml += `
+            <div style="background-color: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; padding: 1.2rem; margin: 1.2rem 0; border-radius: 6px;">
+                <h3 style="margin: 0 0 0.5rem; color: #ffffff; font-size: 1.1rem;">
+                    <span>🚨 [HAZARD #${idx + 1}]</span> ${hazard.location_name}
+                </h3>
+                <p style="margin: 0 0 0.75rem; font-size: 0.95rem; line-height: 1.5; color: #e2e2e6;">
+                    <strong>Details:</strong> ${hazard.details}
+                </p>
+                <p style="margin: 0 0 0.5rem; font-size: 0.9rem; line-height: 1.45; color: #fda4af;">
+                    <strong>⚠️ Required Precaution:</strong> <em>"${hazard.precautions}"</em>
+                </p>
+                <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; font-family: monospace;">
+                    Coordinate rally zone: ${hazard.lat ? hazard.lat.toFixed(4) : '0.0000'}, ${hazard.lng ? hazard.lng.toFixed(4) : '0.0000'}
+                </p>
+            </div>
+        `;
+    });
+    
+    const mailData = {
+        to: email,
+        message: {
+            subject: `🚨 AEGIS EMERGENCY BROADCAST: SOS Siren Triggered & Local Hazards Locked!`,
+            html: `
+                <div style="font-family: Arial, sans-serif; background-color: #07090e; color: #e2e2e6; padding: 2.5rem; border-radius: 12px; border: 2px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);">
+                    <div style="text-align: center; border-bottom: 2px solid rgba(239, 68, 68, 0.3); padding-bottom: 1.5rem; margin-bottom: 2rem;">
+                        <span style="font-size: 3rem;">🚨</span>
+                        <h2 style="color: #ffffff; margin-top: 0.5rem; letter-spacing: 1px;">AEGIS CRITICAL DISTRESS ADVISORY</h2>
+                        <p style="font-size: 0.8rem; color: #ef4444; font-family: monospace; font-weight: bold; text-transform: uppercase;">SOS BEACON ACTIVATED FOR SECTOR</p>
+                    </div>
+                    <p style="font-size: 1.05rem; line-height: 1.6; color: #ffffff;">Hello Operator,</p>
+                    <p style="font-size: 1.05rem; line-height: 1.6; color: #fca5a5;">
+                        This automated dispatch is issued immediately following your manual trigger of the **SOS Emergency Siren**. 
+                        Our sensor grid has compiled a comprehensive catalog of all active localized high-threat hazards within your tracking zone:
+                    </p>
+                    
+                    ${hazardsHtml}
+                    
+                    <div style="background-color: rgba(59, 130, 246, 0.08); border-left: 4px solid #3b82f6; padding: 1.2rem; margin: 2rem 0; border-radius: 6px;">
+                        <h4 style="margin: 0 0 0.5rem; color: #ffffff; font-size: 1rem;">🛡️ Standard Survival Operating Procedures (SOP)</h4>
+                        <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.9rem; line-height: 1.6; color: #bfdbfe;">
+                            <li>Evacuate all personnel immediately from low-lying areas and flood zones.</li>
+                            <li>Navigate only along designated green evacuation routes rendered on your sensory map.</li>
+                            <li>Maintain communication only via secure, low-emission radio satellite relays.</li>
+                            <li>Do not attempt to cross flooded roadways or pass near active hazards.</li>
+                        </ul>
+                    </div>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+                        This critical alert has been dynamically generated and transmitted using the active AEGIS Multi-Agent System and Firebase Cloud Messaging integrations. Take immediate shelter and standby for additional regional updates.
+                    </p>
+                </div>
+            `
+        },
+        timestamp: new Date().toISOString(),
+        status: "pending",
+        operatorEmail: email,
+        isDistressSiren: true,
+        totalHazardsCount: hazards.length
+    };
+    
+    try {
+        if (window.db) {
+            window.db.collection('mail').add(mailData)
+                .then((docRef) => {
+                    logToConsole(`🔥 [SOS EMAIL DISPATCH] Successfully written distress advisory to Firestore (ID: ${docRef.id}).`, "success");
+                })
+                .catch((e) => {
+                    logToConsole(`⚠️ [SOS EMAIL DISPATCH] Firestore write failed: ${e.message}`, "warning");
+                });
+        } else {
+            setTimeout(() => {
+                logToConsole(`🔥 [SOS EMAIL DISPATCH Mock] Successfully logged distress advisory (ID: hf_sos_${Math.random().toString(36).substr(2, 9)}). Dispatch COMPLETE.`, "success");
+            }, 800);
+        }
+    } catch (err) {
+        logToConsole(`⚠️ [SOS EMAIL DISPATCH ERROR] Connection anomaly: ${err.message}`, "warning");
+    }
+    
+    fetch('/api/operator/mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mailData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            logToConsole(`🔥 [MongoDB] SOS emergency email advisory successfully stored in database.`, "success");
+        }
+    })
+    .catch(err => {
+        console.warn("Failed to sync SOS email to MongoDB", err);
+    });
+}
+
 
 // Populate the visual verified dispatch list
 function populateVerifiedInsights(insights) {
@@ -2617,6 +2721,17 @@ function startSiren() {
     }, 450);
     
     logToConsole("🚨 Local distress rescue siren beacon activated!", "error");
+    
+    // Trigger distress advisory email to the operator containing all current hazards
+    const activeOperator = getLoggedInUser() || state.currentUser || "operator@gmail.com";
+    const allInsights = state.lastInsights || [];
+    const activeHazards = allInsights.filter(x => x.status === "HAZARD");
+    
+    if (activeHazards.length > 0) {
+        sendSirenEmergencyEmail(activeOperator, activeHazards);
+    } else {
+        logToConsole("ℹ️ [SOS Dispatch] No active hazards found on dashboard. Siren activated under normal standby.", "info");
+    }
 }
 
 function stopSiren() {
