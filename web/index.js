@@ -1094,7 +1094,7 @@ async function triggerPipelineRun() {
     updateGlobalStatus("RUNNING", "running");
     
     // Prepare search query
-    const searchQuery = dom.serpQueryInput.value.trim() || "emergency response Broadway Street fire disaster";
+    const searchQuery = dom.serpQueryInput.value.trim() || "active weather hazards storm warnings";
     
     // Step 1: Start audio animation and simulated countdown timer
     updateTimelineStep(dom.stepAsr, "active", "Transcribing...");

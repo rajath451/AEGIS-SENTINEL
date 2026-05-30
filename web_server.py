@@ -805,7 +805,7 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
                             
                         # Static NYC fallback markers
                         loc = item.get("location_name", "").lower()
-                        if "broadway" in loc:
+                        if "nyc" in loc or "weather grid" in loc:
                             item["lat"] = 40.758896
                             item["lng"] = -73.985130
                         elif "central park" in loc or "park" in loc:

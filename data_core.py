@@ -13,7 +13,7 @@ load_dotenv()
 
 logger = logging.getLogger("BrightDataDataCore")
 
-def fetch_live_crisis_data(query="emergency Broadway Street fire"):
+def fetch_live_crisis_data(query="active weather hazards storm warnings"):
     """
     Fetches real-time structured web context using Bright Data's SERP API.
     Lists active zones first, finds a suitable zone, and triggers the search query.
@@ -194,7 +194,7 @@ def get_mock_serp_data(query):
             ]
         }
 
-    logger.info("ℹ️ [Bright Data Mock] Serving structured crisis news context from fallback SERP data:")
+    logger.info("ℹ️ [Bright Data Mock] Serving safe structured crisis news context from fallback SERP data:")
     return {
         "search_parameters": {
             "q": query,
@@ -203,21 +203,21 @@ def get_mock_serp_data(query):
         "organic_results": [
             {
                 "position": 1,
-                "title": "Breaking: Gas Leak and Small Fire at Broadway Street Service Station",
-                "link": "https://emergency-news.local/broadway-street-gas-fire",
-                "snippet": "Local fire dispatch has confirmed a gas leak leading to a fire at Broadway Street. Residents are advised to avoid the area. Safe zones established at Central Park."
+                "title": "[DEMO] Environmental Weather Grid Tracking - Sector NYC",
+                "link": "https://emergency-news.local/nyc-weather-grid",
+                "snippet": "Aegis Sentinel weather telemetry logs active monitoring for heavy winds and precipitation in the New York metropolitan area. All municipal service grids operating normally."
             },
             {
                 "position": 2,
-                "title": "Central Park Set Up as Disaster Coordination and Safe Zone",
-                "link": "https://emergency-news.local/central-park-safe-zone",
-                "snippet": "Municipal emergency teams have set up medical tents and distribution points inside Central Park. This is currently marked as a secure SAFE_ZONE."
+                "title": "[DEMO] Central Park Preemptive Support Zone",
+                "link": "https://emergency-news.local/central-park-preemptive-zone",
+                "snippet": "Municipal emergency teams have established a standby medical shelter and distribution center inside Central Park as a standard safety precaution."
             },
             {
                 "position": 3,
-                "title": "5th Avenue Medical Hub Requests Additional Supplies",
-                "link": "https://emergency-news.local/5th-avenue-resource-hub",
-                "snippet": "First responders are requesting more resources (medical supplies, blankets, and water) at 5th Avenue coordination station."
+                "title": "[DEMO] 5th Avenue Preemptive Hub Standby",
+                "link": "https://emergency-news.local/5th-avenue-preemptive-hub",
+                "snippet": "Local emergency operations support centers are prepared to distribute blankets, water, and first aid toolkits as a routine precautionary standby measure."
             }
         ]
     }
