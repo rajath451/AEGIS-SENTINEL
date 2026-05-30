@@ -89,6 +89,20 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
             self.send_cors_headers('application/json')
             self.wfile.write(json.dumps(latest_run_data).encode('utf-8'))
             return
+            
+        elif path == '/api/firebase-config':
+            self.send_cors_headers('application/json')
+            config = {
+                "apiKey": os.environ.get("FIREBASE_API_KEY", ""),
+                "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN", ""),
+                "projectId": os.environ.get("FIREBASE_PROJECT_ID", ""),
+                "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET", ""),
+                "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID", ""),
+                "appId": os.environ.get("FIREBASE_APP_ID", ""),
+                "measurementId": os.environ.get("FIREBASE_MEASUREMENT_ID", "")
+            }
+            self.wfile.write(json.dumps(config).encode('utf-8'))
+            return
         
         # Serve static files from the 'web' directory
         web_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web')

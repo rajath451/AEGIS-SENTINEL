@@ -1070,30 +1070,30 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
     <script>
-      // Active Live Web App's Firebase configuration
-      const firebaseConfig = {
-        apiKey: "AIzaSyFakeKeyAEGIS-SentinelHUD2026",
-        authDomain: "egis-sentinel-hud.firebaseapp.com",
-        projectId: "egis-sentinel-hud",
-        storageBucket: "egis-sentinel-hud.firebasestorage.app",
-        messagingSenderId: "862993360257",
-        appId: "1:862993360257:web:a9a52e93744afb221af480",
-        measurementId: "G-QR12879F0Q"
-      };
-      
-      try {
-        // Initialize Firebase App in compatibility mode
-        if (typeof firebase !== 'undefined') {
-            firebase.initializeApp(firebaseConfig);
-            window.db = firebase.firestore();
-            if (typeof firebase.analytics === 'function') {
-                firebase.analytics();
+      // Load Firebase configuration dynamically from secure backend endpoints to prevent Git exposure!
+      fetch('/api/firebase-config')
+        .then(res => res.json())
+        .then(firebaseConfig => {
+          if (!firebaseConfig.apiKey) {
+            console.warn("⚠️ Firebase configuration is unconfigured or empty on the server.");
+            return;
+          }
+          try {
+            if (typeof firebase !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+                window.db = firebase.firestore();
+                if (typeof firebase.analytics === 'function' && firebaseConfig.measurementId) {
+                    firebase.analytics();
+                }
+                console.log("🔥 Production Firebase Client & Analytics initialized dynamically.");
             }
-            console.log("🔥 Production Firebase Client & Analytics initialized.");
-        }
-      } catch (e) {
-        console.warn("⚠️ Firebase scripts loaded but initialization was bypassed: " + e.message);
-      }
+          } catch (e) {
+            console.warn("⚠️ Firebase initialization encountered error: " + e.message);
+          }
+        })
+        .catch(err => {
+          console.error("⚠️ Failed to resolve Firebase server-side configuration", err);
+        });
     </script>
 
     <!-- Google Maps API static loader script -->
