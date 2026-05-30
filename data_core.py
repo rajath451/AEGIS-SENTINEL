@@ -93,6 +93,46 @@ def get_mock_serp_data(query):
     Returns realistic structured SERP data to ensure the pipeline operates
     flawlessly in local development/trial mode.
     """
+    query_lower = query.lower()
+    
+    # Check if this is a custom localized query (not one of the presets)
+    presets = ["broadway", "world", "global", "usa", "uk", "england", "london", "india", "mumbai", "delhi", "japan", "tokyo", "hokkaido"]
+    is_custom_local = not any(word in query_lower for word in presets)
+    
+    if is_custom_local:
+        # Extract dynamic city name from query
+        city = "Local Sector"
+        if "in " in query_lower:
+            parts = query.split("in ")
+            if len(parts) > 1:
+                city = parts[1].strip().title()
+        elif "near " in query_lower:
+            parts = query.split("near ")
+            if len(parts) > 1:
+                city = parts[1].strip().title()
+                
+        logger.info(f"ℹ️ [Bright Data Mock] Serving safe, non-emergency local telemetry for: {city}")
+        return {
+            "search_parameters": {
+                "q": query,
+                "engine": "google"
+            },
+            "organic_results": [
+                {
+                    "position": 1,
+                    "title": f"Official Update: Aegis Sentinel Active Monitoring in {city}",
+                    "link": f"https://emergency-news.local/{city.lower()}-safe-monitoring",
+                    "snippet": f"Aegis Sentinel coordination center confirms active grid tracking for {city} sector. All sensor telemetry networks are reporting safe baseline parameters with zero active fires, gas leaks, or critical incidents."
+                },
+                {
+                    "position": 2,
+                    "title": f"{city} Municipal Readiness Hub Online",
+                    "link": f"https://emergency-news.local/{city.lower()}-resource-hub",
+                    "snippet": f"Municipal disaster coordination units in {city} have established a standby monitoring hub to track seasonal weather. Stations are equipped with standard safety equipment and are operating under normal standby."
+                }
+            ]
+        }
+
     logger.info("ℹ️ [Bright Data Mock] Serving structured crisis news context from fallback SERP data:")
     return {
         "search_parameters": {
