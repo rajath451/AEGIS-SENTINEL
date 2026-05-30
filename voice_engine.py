@@ -149,8 +149,8 @@ def process_crisis_audio(file_path):
         if not transcript.strip():
             logger.info("🔊 Speechmatics API successfully responded (Silent audio detected).")
             logger.info("📝 Injecting realistic emergency dispatch stream for end-to-end reasoning demonstration:")
-            return ("Dispatcher: Confirming reports of a major gas hazard at Broadway Street. "
-                    "All units, stay clear of the gas station! We have also verified that Central Park "
-                    "is a secure SAFE_ZONE. Please route all additional medical resources to 5th Avenue.")
+            return ("Dispatcher: Active telemetry sweep confirms normal municipal operational state. "
+                    "All sector sensors are reporting safe baseline parameters with zero active hazards. "
+                    "Relocation shelters are on standby, and logistics bases are prepared for standard seasonal monitoring.")
         
         return transcript
