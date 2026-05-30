@@ -181,18 +181,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Restore persistent localized coordinates
-    const storedCoords = localStorage.getItem('aegis_last_localized_coords');
-    if (storedCoords) {
-        try {
-            const { lat, lng } = JSON.parse(storedCoords);
-            state.userLat = lat;
-            state.userLng = lng;
-            logToConsole(`📍 Geolocation state restored from storage: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "info");
-        } catch (e) {
-            // Ignore
-        }
+    // Restore persistent localized coordinates from MongoDB secure backend!
+    if (savedUser) {
+        fetch(`/api/operator/localize?email=${encodeURIComponent(savedUser)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success" && data.coords) {
+                    const { lat, lng } = data.coords;
+                    state.userLat = lat;
+                    state.userLng = lng;
+                    logToConsole(`📍 Geolocation state restored from secure database: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "info");
+                    
+                    // Trigger map view update if loaded
+                    if (state.map && lat && lng) {
+                        state.map.setView([lat, lng], 13);
+                        if (state.userLocationMarker) {
+                            state.map.removeLayer(state.userLocationMarker);
+                        }
+                        const userIcon = L.divIcon({
+                            className: 'custom-leaflet-marker',
+                            html: `
+                                <div class="marker-pulse-ring" style="border: 2px solid #3b82f6; box-shadow: 0 0 10px #3b82f6;"></div>
+                                <div class="marker-pin-inner" style="background-color: #3b82f6;"></div>
+                            `,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16]
+                        });
+                        state.userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(state.map);
+                        state.userLocationMarker.bindPopup("<b>📍 Your Location</b><br>Secured sensory dispatch node.");
+                    }
+                } else {
+                    // Fallback to localStorage cache
+                    const storedCoords = localStorage.getItem('aegis_last_localized_coords');
+                    if (storedCoords) {
+                        try {
+                            const { lat, lng } = JSON.parse(storedCoords);
+                            state.userLat = lat;
+                            state.userLng = lng;
+                            logToConsole(`📍 Geolocation state restored from local cache: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "info");
+                        } catch (e) {}
+                    }
+                }
+            })
+            .catch(err => {
+                // Fallback to localStorage cache
+                const storedCoords = localStorage.getItem('aegis_last_localized_coords');
+                if (storedCoords) {
+                    try {
+                        const { lat, lng } = JSON.parse(storedCoords);
+                        state.userLat = lat;
+                        state.userLng = lng;
+                        logToConsole(`📍 Geolocation state restored from local cache: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "info");
+                    } catch (e) {}
+                }
+            });
     }
+
 });
 
 // Event Listeners Configuration
@@ -268,8 +312,27 @@ function setupEventListeners() {
                         state.userLat = lat;
                         state.userLng = lng;
                         
-                        // Save geolocated coordinates persistently
+                        // Save geolocated coordinates persistently to local cache and secure MongoDB database!
                         localStorage.setItem('aegis_last_localized_coords', JSON.stringify({ lat, lng }));
+                        
+                        const operator = getLoggedInUser() || state.currentUser;
+                        if (operator) {
+                            fetch('/api/operator/localize', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: operator, lat, lng })
+                            })
+                            .then(res => res.json())
+                            .then(resData => {
+                                if (resData.status === "success") {
+                                    logToConsole(`🔥 [MongoDB] Successfully synchronized localization coordinates to secure database.`, "success");
+                                }
+                            })
+                            .catch(err => {
+                                console.warn("Failed to sync coordinates to MongoDB", err);
+                            });
+                        }
+
                         
                         logToConsole(`📍 Geolocation locked: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, "success");
                         
@@ -808,18 +871,7 @@ function setupEventListeners() {
                 return;
             }
 
-            const users = getRegisteredUsers();
-
             if (state.authMode === 'signup') {
-                // Sign Up flow
-                if (users[emailVal.toLowerCase()]) {
-                    if (errEl) {
-                        errEl.textContent = "⚠️ Registration Error: Email is already registered.";
-                        errEl.style.display = 'block';
-                    }
-                    return;
-                }
-                
                 if (passVal.length < 4) {
                     if (errEl) {
                         errEl.textContent = "⚠️ Registration Error: Password must be at least 4 characters.";
@@ -828,22 +880,54 @@ function setupEventListeners() {
                     return;
                 }
                 
-                // Save user credentials
-                users[emailVal.toLowerCase()] = passVal;
-                saveRegisteredUsers(users);
-                logToConsole(`📝 Registered new operator: ${emailVal}`, "success");
-            } else {
-                // Log In flow
-                const registeredPass = users[emailVal.toLowerCase()];
-                if (!registeredPass || registeredPass !== passVal) {
+                try {
+                    const res = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: emailVal, password: passVal })
+                    });
+                    const resData = await res.json();
+                    if (resData.status !== "success") {
+                        if (errEl) {
+                            errEl.textContent = `⚠️ Registration Error: ${resData.message}`;
+                            errEl.style.display = 'block';
+                        }
+                        return;
+                    }
+                    logToConsole(`📝 Registered new operator: ${emailVal}`, "success");
+                } catch (err) {
                     if (errEl) {
-                        errEl.textContent = "⚠️ Security Error: Invalid email or password.";
+                        errEl.textContent = `⚠️ Database error connecting to server.`;
                         errEl.style.display = 'block';
                     }
-                    logToConsole("⚠️ Security system denied operator access: invalid credentials.", "error");
+                    return;
+                }
+            } else {
+                try {
+                    const res = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: emailVal, password: passVal })
+                    });
+                    const resData = await res.json();
+                    if (resData.status !== "success") {
+                        if (errEl) {
+                            errEl.textContent = "⚠️ Security Error: Invalid email or password.";
+                            errEl.style.display = 'block';
+                        }
+                        logToConsole("⚠️ Security system denied operator access: invalid credentials.", "error");
+                        return;
+                    }
+                    logToConsole(`🔑 Login verified: operator session authorized for ${emailVal}`, "success");
+                } catch (err) {
+                    if (errEl) {
+                        errEl.textContent = `⚠️ Database error connecting to server.`;
+                        errEl.style.display = 'block';
+                    }
                     return;
                 }
             }
+
             
             // Success: Play visual loading boot sequence
             if (errEl) errEl.style.display = 'none';
@@ -1781,7 +1865,24 @@ function sendFirebasePrecautionEmail(email, hazardItem, distance) {
     } catch (err) {
         logToConsole(`⚠️ [FIREBASE ERROR] Connection anomaly: ${err.message}`, "warning");
     }
+
+    // Write the same warning logs securely to MongoDB
+    fetch('/api/operator/mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mailData)
+    })
+    .then(res => res.json())
+    .then(resData => {
+        if (resData.status === "success") {
+            logToConsole(`🔥 [MongoDB] Successfully logged dispatch warning in operator mail_logs database.`, "success");
+        }
+    })
+    .catch(err => {
+        console.warn("Failed to sync mail log to MongoDB", err);
+    });
 }
+
 
 // Populate the visual verified dispatch list
 function populateVerifiedInsights(insights) {

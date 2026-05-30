@@ -25,6 +25,14 @@ try:
 except ImportError as e:
     print(f"Warning: Could not import core components directly. Some elements will run in mock mode: {e}")
 
+# Import MongoDB secure backend database layer
+try:
+    import mongodb_client
+except ImportError as e:
+    print(f"Warning: Could not import mongodb_client: {e}")
+    mongodb_client = None
+
+
 # Global storage for the latest run cache
 latest_run_data = {
     "status": "idle",
@@ -89,6 +97,21 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
             self.send_cors_headers('application/json')
             self.wfile.write(json.dumps(latest_run_data).encode('utf-8'))
             return
+            
+        elif path == '/api/operator/localize':
+            self.send_cors_headers('application/json')
+            if mongodb_client:
+                params = urllib.parse.parse_qs(parsed_url.query)
+                email = params.get('email', [None])[0]
+                if email:
+                    coords = mongodb_client.get_operator_coordinates(email)
+                    self.wfile.write(json.dumps({"status": "success", "coords": coords}).encode('utf-8'))
+                else:
+                    self.wfile.write(json.dumps({"status": "error", "message": "Email query param is required"}).encode('utf-8'))
+            else:
+                self.wfile.write(json.dumps({"status": "error", "message": "MongoDB driver not available"}).encode('utf-8'))
+            return
+
             
         elif path == '/api/firebase-config':
             self.send_cors_headers('application/json')
@@ -174,7 +197,103 @@ class CrisisDashboardHandler(BaseHTTPRequestHandler):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
 
-        if path == '/api/upload-audio':
+        if path == '/api/auth/register':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            self.send_cors_headers('application/json')
+            try:
+                data = json.loads(post_data)
+                email = data.get('email')
+                password = data.get('password')
+                
+                if not email or not password:
+                    self.wfile.write(json.dumps({"status": "error", "message": "Email and password are required"}).encode('utf-8'))
+                    return
+                
+                if mongodb_client:
+                    success, msg = mongodb_client.register_operator(email, password)
+                    if success:
+                        self.wfile.write(json.dumps({"status": "success", "message": msg}).encode('utf-8'))
+                    else:
+                        self.wfile.write(json.dumps({"status": "error", "message": msg}).encode('utf-8'))
+                else:
+                    self.wfile.write(json.dumps({"status": "error", "message": "MongoDB driver not available"}).encode('utf-8'))
+            except Exception as e:
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode('utf-8'))
+            return
+
+        elif path == '/api/auth/login':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            self.send_cors_headers('application/json')
+            try:
+                data = json.loads(post_data)
+                email = data.get('email')
+                password = data.get('password')
+                
+                if not email or not password:
+                    self.wfile.write(json.dumps({"status": "error", "message": "Email and password are required"}).encode('utf-8'))
+                    return
+                
+                if mongodb_client:
+                    success, op_data = mongodb_client.authenticate_operator(email, password)
+                    if success:
+                        self.wfile.write(json.dumps({"status": "success", "operator": op_data}).encode('utf-8'))
+                    else:
+                        self.wfile.write(json.dumps({"status": "error", "message": "Invalid email or password."}).encode('utf-8'))
+                else:
+                    self.wfile.write(json.dumps({"status": "error", "message": "MongoDB driver not available"}).encode('utf-8'))
+            except Exception as e:
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode('utf-8'))
+            return
+
+        elif path == '/api/operator/localize':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            self.send_cors_headers('application/json')
+            try:
+                data = json.loads(post_data)
+                email = data.get('email')
+                lat = data.get('lat')
+                lng = data.get('lng')
+                
+                if not email or lat is None or lng is None:
+                    self.wfile.write(json.dumps({"status": "error", "message": "Email, lat, and lng are required"}).encode('utf-8'))
+                    return
+                
+                if mongodb_client:
+                    success = mongodb_client.update_operator_coordinates(email, lat, lng)
+                    if success:
+                        self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+                    else:
+                        self.wfile.write(json.dumps({"status": "error", "message": "Failed to update operator coordinates"}).encode('utf-8'))
+                else:
+                    self.wfile.write(json.dumps({"status": "error", "message": "MongoDB driver not available"}).encode('utf-8'))
+            except Exception as e:
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode('utf-8'))
+            return
+
+        elif path == '/api/operator/mail':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            self.send_cors_headers('application/json')
+            try:
+                data = json.loads(post_data)
+                
+                if mongodb_client:
+                    success = mongodb_client.log_mail_warning(data)
+                    if success:
+                        self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+                    else:
+                        self.wfile.write(json.dumps({"status": "error", "message": "Failed to log mail warning"}).encode('utf-8'))
+                else:
+                    self.wfile.write(json.dumps({"status": "error", "message": "MongoDB driver not available"}).encode('utf-8'))
+            except Exception as e:
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode('utf-8'))
+            return
+
+        elif path == '/api/upload-audio':
+
             content_length = int(self.headers.get('Content-Length', 0))
             audio_bytes = self.rfile.read(content_length)
             

@@ -2,3 +2,4 @@ cognee
 python-dotenv
 openai
 requests
+pymongo
