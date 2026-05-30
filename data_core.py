@@ -2,6 +2,10 @@ import os
 import json
 import logging
 import requests
+import xml.etree.ElementTree as ET
+import urllib.request
+import urllib.parse
+import re
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -13,12 +17,12 @@ def fetch_live_crisis_data(query="emergency Broadway Street fire"):
     """
     Fetches real-time structured web context using Bright Data's SERP API.
     Lists active zones first, finds a suitable zone, and triggers the search query.
-    If none exist or credentials fail, falls back gracefully.
+    If none exist or credentials fail, falls back gracefully to live Google News RSS.
     """
     api_token = os.getenv("BRIGHT_DATA_API_TOKEN")
     if not api_token:
-        logger.warning("⚠️ BRIGHT_DATA_API_TOKEN is not set in environment or .env file.")
-        return get_mock_serp_data(query)
+        logger.warning("⚠️ BRIGHT_DATA_API_TOKEN is not set in environment or .env file. Routing to live Google News RSS.")
+        return get_live_fallback_news(query)
 
     headers = {
         "Authorization": f"Bearer {api_token}",
@@ -37,9 +41,9 @@ def fetch_live_crisis_data(query="emergency Broadway Street fire"):
         if zones_response.status_code != 200:
             logger.warning(
                 f"⚠️ [Bright Data] Failed to fetch active zones (Status: {zones_response.status_code}). "
-                f"Response: {zones_response.text}. Using fallback SERP data core."
+                f"Response: {zones_response.text}. Using live RSS news fallback."
             )
-            return get_mock_serp_data(query)
+            return get_live_fallback_news(query)
         
         zones = zones_response.json()
         logger.info(f"🌐 [Bright Data] Successfully listed active zones: {[z.get('name') for z in zones]}")
@@ -55,8 +59,8 @@ def fetch_live_crisis_data(query="emergency Broadway Street fire"):
             serp_zone = zones[0].get("name")
             
         if not serp_zone:
-            logger.warning("⚠️ [Bright Data] No active zones configured on this account. Using fallback SERP data core.")
-            return get_mock_serp_data(query)
+            logger.warning("⚠️ [Bright Data] No active zones configured on this account. Using live RSS news fallback.")
+            return get_live_fallback_news(query)
             
         logger.info(f"🎯 [Bright Data] Using Zone '{serp_zone}' to trigger Google SERP query: '{query}'...")
         
@@ -80,13 +84,70 @@ def fetch_live_crisis_data(query="emergency Broadway Street fire"):
         else:
             logger.warning(
                 f"⚠️ [Bright Data] SERP API request returned code {serp_response.status_code}: {serp_response.text}. "
-                "Using fallback SERP data core."
+                "Using live RSS news fallback."
             )
-            return get_mock_serp_data(query)
+            return get_live_fallback_news(query)
 
     except Exception as e:
-        logger.warning(f"⚠️ [Bright Data] Error contacting API: {e}. Using fallback SERP data core.")
-        return get_mock_serp_data(query)
+        logger.warning(f"⚠️ [Bright Data] Error contacting API: {e}. Using live RSS news fallback.")
+        return get_live_fallback_news(query)
+
+def get_live_fallback_news(query):
+    """
+    Connects to the public Google News RSS feed to pull actual, real-time current news
+    articles matching the search query, bypassing premium SERP restrictions completely.
+    """
+    logger.info(f"📡 [Google News RSS] Scraping live real-time news for query: '{query}'...")
+    try:
+        encoded_query = urllib.parse.quote(query)
+        # Fetch standard global or localized news depending on query elements
+        rss_url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-IN&gl=IN&ceid=IN:en"
+        
+        req = urllib.request.Request(
+            rss_url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        )
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            xml_data = response.read()
+            
+        root = ET.fromstring(xml_data)
+        articles = []
+        
+        # Pull top 5 live current news items
+        for idx, item in enumerate(root.findall(".//item")[:5]):
+            title = item.find("title").text if item.find("title") is not None else ""
+            link = item.find("link").text if item.find("link") is not None else ""
+            snippet = item.find("description").text if item.find("description") is not None else ""
+            
+            if snippet:
+                # Discard HTML tags inside Google News description tags
+                snippet = re.sub('<[^<]+?>', '', snippet)
+                
+            articles.append({
+                "position": idx + 1,
+                "title": title,
+                "link": link,
+                "snippet": snippet
+            })
+            
+        if articles:
+            logger.info(f"✅ [Google News RSS] Successfully ingested {len(articles)} real, live crisis news entries.")
+            return {
+                "search_parameters": {
+                    "q": query,
+                    "engine": "google_rss"
+                },
+                "organic_results": articles
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ [Google News RSS] Encountered error pulling live RSS feed: {e}")
+        
+    # If network/RSS feed fails completely, fallback to safe localized simulated data
+    return get_mock_serp_data(query)
 
 def get_mock_serp_data(query):
     """
