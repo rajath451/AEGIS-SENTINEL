@@ -94,9 +94,9 @@ const dom = {
 function getRegisteredUsers() {
     try {
         const users = localStorage.getItem('aegis_users');
-        return users ? JSON.parse(users) : { "operator@aegis.secure": "1234" }; // Default credentials matching original passcode
+        return users ? JSON.parse(users) : { "operator@gmail.com": "1234" }; // Default credentials matching original passcode
     } catch (e) {
-        return { "operator@aegis.secure": "1234" };
+        return { "operator@gmail.com": "1234" };
     }
 }
 
